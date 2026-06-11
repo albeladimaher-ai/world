@@ -240,11 +240,14 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:24px 0}
     <!-- members -->
     <div id="admin-members">
       <div class="card" style="padding:16px">
-        <div class="section-h" style="margin-top:0"><h3>إضافة الأعضاء</h3></div>
-        <label>اكتب في كل سطر: اسم العضو ثم فاصلة ثم كلمة المرور — مثال: أحمد، Ahmad123</label>
-        <textarea id="nu-names" rows="5" placeholder="أحمد، Ahmad123&#10;سارة، Sara2026&#10;خالد، Khaled99"></textarea>
-        <div class="note">رقم العضوية (اسم المستخدم) يتكوّن من 4 أرقام ويُنشأ تلقائياً. إن تركت كلمة المرور فارغة ستُولّد تلقائياً.</div>
-        <button class="btn" style="margin-top:10px" onclick="addUsers()">إنشاء الأعضاء ومنح الدخول</button>
+        <div class="section-h" style="margin-top:0"><h3>إضافة عضو</h3></div>
+        <div class="inline-form">
+          <div class="full"><label>الاسم</label><input id="nu-name" placeholder="اسم العضو"></div>
+          <div><label>اسم المستخدم (4 أرقام)</label><input id="nu-user" inputmode="numeric" maxlength="4" placeholder="مثال: 1042"></div>
+          <div><label>كلمة المرور</label><input id="nu-pass" placeholder="كلمة المرور"></div>
+        </div>
+        <div class="note">إن تركت اسم المستخدم فارغاً يُنشأ رقم من 4 خانات تلقائياً. وإن تركت كلمة المرور فارغة تُولّد تلقائياً.</div>
+        <button class="btn" style="margin-top:10px" onclick="addUser()">إضافة العضو</button>
         <div id="newcred"></div>
       </div>
       <div class="section-h"><h3>الأعضاء</h3><span style="display:flex;gap:8px;align-items:center"><span class="mini" id="members-count"></span><button class="btn tiny danger" onclick="deleteAllUsers()">حذف جميع الأعضاء</button></span></div>
@@ -637,35 +640,34 @@ async function renderAdminStats(){
 function stat(n,l){ return `<div class="stat"><div class="n">${n}</div><div class="l">${l}</div></div>`; }
 
 let _lastCreds='';
-async function addUsers(){
-  const lines = $('#nu-names').value.split('\n').map(s=>s.trim()).filter(Boolean);
-  if(!lines.length){ toast('أدخل اسماً واحداً على الأقل'); return; }
+async function addUser(){
+  const name=$('#nu-name').value.trim();
+  let user=$('#nu-user').value.trim();
+  const passIn=$('#nu-pass').value.trim();
+  if(!name){ toast('أدخل اسم العضو'); return; }
   const users = await store.get(K.users) || [];
-  const created = [];
-  for(const line of lines){
-    const parts = line.split(/[,،]/);
-    const name = parts[0].trim();
-    if(!name) continue;
-    const pass = parts.slice(1).join('،').trim() || genPass();
-    let id; do{ id=genId(); }while(users.some(u=>u.id===id)||created.some(c=>c.id===id));
-    const rec = {uid:uid(),name,id,pass};
-    users.push(rec); created.push(rec);
+  if(user){
+    if(!/^\d{4}$/.test(user)){ toast('اسم المستخدم يجب أن يكون 4 أرقام'); return; }
+    if(users.some(u=>u.id===user)){ toast('اسم المستخدم مستخدم بالفعل'); return; }
+  } else {
+    do{ user=genId(); }while(users.some(u=>u.id===user));
   }
-  if(!created.length){ toast('تأكد من كتابة اسم في كل سطر'); return; }
+  const pass = passIn || genPass();
+  const rec = {uid:uid(),name,id:user,pass};
+  users.push(rec);
   await store.set(K.users,users);
-  $('#nu-names').value='';
-  _lastCreds = created.map(c=>`${c.name} — رقم العضوية: ${c.id} — كلمة المرور: ${c.pass}`).join('\n');
+  $('#nu-name').value='';$('#nu-user').value='';$('#nu-pass').value='';
+  _lastCreds = `${name} — اسم المستخدم: ${user} — كلمة المرور: ${pass}`;
   $('#newcred').innerHTML = `<div class="credbox">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:11px;flex-wrap:wrap">
-      <div style="font-size:13px;color:var(--pitch);font-weight:700">✓ تم إنشاء ${created.length} عضو — شارك بياناتهم معهم</div>
-      <button class="btn tiny gold" onclick="copyTxt(_lastCreds)">نسخ بيانات الجميع</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:9px;flex-wrap:wrap">
+      <div style="font-size:13px;color:var(--pitch);font-weight:700">✓ تمت إضافة العضو — شارك بياناته معه</div>
+      <button class="btn tiny gold" onclick="copyTxt(_lastCreds)">نسخ البيانات</button>
     </div>
-    ${created.map(c=>`<div class="row" style="margin-bottom:7px">
-      <span class="cred" style="font-size:15px">${esc(c.name)}</span>
-      <span style="font-family:'Reem Kufi';font-size:14px">${c.id} <span style="color:var(--muted)">·</span> ${esc(c.pass)}</span>
-    </div>`).join('')}
+    <div class="row"><span class="cred" style="font-size:15px">${esc(name)}</span>
+      <span style="font-family:'Reem Kufi';font-size:14px">${user} <span style="color:var(--muted)">·</span> ${esc(pass)}</span></div>
   </div>`;
   renderMembers(); renderAdminStats();
+  $('#nu-name').focus();
 }
 function copyTxt(t){ navigator.clipboard?.writeText(t).then(()=>toast('تم النسخ'),()=>{}); }
 
