@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>توقعات كأس العالم 2026</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@500;600;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -349,29 +350,44 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:24px 0}
 
 <script>
 /* ================= STORAGE LAYER ================= */
-let NO_PERSIST = false;
-(function(){
-  if(!window.storage){
-    NO_PERSIST = true;
-    const mem = {};
-    window.storage = {
-      async get(k){ if(!(k in mem)) throw new Error('not found'); return {key:k,value:mem[k],shared:true}; },
-      async set(k,v){ mem[k]=v; return {key:k,value:v,shared:true}; },
-      async delete(k){ delete mem[k]; return {key:k,deleted:true}; },
-      async list(p){ return {keys:Object.keys(mem).filter(x=>x.startsWith(p||'')),shared:true}; }
-    };
-  }
-})();
-const SH = true;
+/* ================= SUPABASE BACKEND ================= */
+const SUPABASE_URL = "https://xdjvjnsquyefxbfkfqhb.supabase.co";
+const SUPABASE_KEY = "sb_publishable_elo338p4RwOnG48PaVkBpg_AaJnbW1C";
+let sb = null, DB_OK = false;
+try {
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  DB_OK = true;
+} catch(e){ console.error('Supabase init failed:', e); }
+
 const K = {
-  admin:'wc26_admin', users:'wc26_users', matches:'wc26_matches',
+  users:'wc26_users', matches:'wc26_matches',
   pred:(id)=>'wc26_pred_'+id
 };
 const store = {
-  async get(key){ try{ const r=await window.storage.get(key,SH); return r?JSON.parse(r.value):null; }catch(e){ return null; } },
-  async set(key,val){ try{ await window.storage.set(key,JSON.stringify(val),SH); return true; }catch(e){ toast('تعذّر الحفظ'); return false; } },
-  async del(key){ try{ await window.storage.delete(key,SH); }catch(e){} },
-  async listKeys(prefix){ try{ const r=await window.storage.list(prefix,SH); return r?r.keys:[]; }catch(e){ return []; } }
+  async get(key){
+    try{
+      const {data,error}=await sb.from('kv').select('value').eq('key',key).maybeSingle();
+      if(error){ console.error('get',key,error); return null; }
+      return data ? data.value : null;
+    }catch(e){ console.error(e); return null; }
+  },
+  async set(key,val){
+    try{
+      const {error}=await sb.from('kv').upsert({key,value:val},{onConflict:'key'});
+      if(error){ console.error('set',key,error); toast('تعذّر الحفظ في قاعدة البيانات'); return false; }
+      return true;
+    }catch(e){ console.error(e); toast('تعذّر الحفظ'); return false; }
+  },
+  async del(key){
+    try{ await sb.from('kv').delete().eq('key',key); }catch(e){ console.error(e); }
+  },
+  async listKeys(prefix){
+    try{
+      const {data,error}=await sb.from('kv').select('key').like('key',prefix+'%');
+      if(error){ console.error('list',error); return []; }
+      return data.map(r=>r.key);
+    }catch(e){ console.error(e); return []; }
+  }
 };
 
 /* ================= FLAGS ================= */
@@ -587,7 +603,7 @@ function logout(){ CUR=null; clearInterval(window._tick); show('view-login'); sw
 /* ================= ADMIN ================= */
 async function openAdmin(){
   show('view-admin');
-  if(NO_PERSIST){ $('#admin-persist').classList.remove('hidden'); $('#admin-persist').textContent='تنبيه: يبدو أن المنصة تعمل بدون تخزين دائم — البيانات لن تُحفظ بعد إغلاق الصفحة. افتحها داخل تطبيق Claude لتفعيل الحفظ.'; }
+  if(!DB_OK){ $('#admin-persist').classList.remove('hidden'); $('#admin-persist').textContent='تعذّر الاتصال بقاعدة البيانات (Supabase). تأكد من اتصال الإنترنت ومن صحّة إعدادات Supabase.'; }
   await renderAdminStats();
   await adminTabRefresh();
 }
