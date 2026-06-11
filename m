@@ -42,13 +42,14 @@ body{
 }
 h1,h2,h3,.display{font-family:'Reem Kufi',sans-serif;font-weight:700;letter-spacing:.2px}
 button{font-family:inherit;cursor:pointer}
-input,select,button{font-family:inherit}
-input,select{
+input,select,textarea,button{font-family:inherit}
+input,select,textarea{
   width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--cream);
   padding:11px 13px;border-radius:11px;font-size:15px;outline:none;transition:border-color .15s,box-shadow .15s;
 }
-input:focus,select:focus{border-color:var(--pitch);box-shadow:0 0 0 3px rgba(34,197,94,.16)}
-input::placeholder{color:var(--muted-d)}
+input:focus,select:focus,textarea:focus{border-color:var(--pitch);box-shadow:0 0 0 3px rgba(34,197,94,.16)}
+input::placeholder,textarea::placeholder{color:var(--muted-d)}
+textarea{resize:vertical;line-height:1.7;min-height:96px}
 label{display:block;font-size:13px;color:var(--muted);margin:0 2px 6px;font-weight:500}
 .field{margin-bottom:13px}
 .btn{
@@ -255,13 +256,10 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:24px 0}
     <!-- members -->
     <div id="admin-members">
       <div class="card" style="padding:16px">
-        <div class="section-h" style="margin-top:0"><h3>إضافة عضو جديد</h3></div>
-        <div class="inline-form">
-          <div class="full"><label>اسم العضو</label><input id="nu-name" placeholder="مثال: أحمد"></div>
-          <div><label>رقم العضوية (اختياري)</label><input id="nu-id" inputmode="numeric" placeholder="يُولّد تلقائياً"></div>
-          <div><label>كلمة المرور (اختياري)</label><input id="nu-pass" placeholder="تُولّد تلقائياً"></div>
-        </div>
-        <button class="btn" style="margin-top:6px" onclick="addUser()">إضافة العضو ومنح الدخول</button>
+        <div class="section-h" style="margin-top:0"><h3>إضافة الأعضاء دفعة واحدة</h3></div>
+        <label>اكتب اسم كل عضو في سطر مستقل — سيُنشأ لكل واحد رقم عضوية وكلمة مرور تلقائياً</label>
+        <textarea id="nu-names" rows="5" placeholder="أحمد&#10;سارة&#10;خالد&#10;نورة"></textarea>
+        <button class="btn" style="margin-top:10px" onclick="addUsers()">إنشاء الأعضاء ومنح الدخول</button>
         <div id="newcred"></div>
       </div>
       <div class="section-h"><h3>الأعضاء</h3><span class="mini" id="members-count"></span></div>
@@ -637,22 +635,29 @@ async function renderAdminStats(){
 }
 function stat(n,l){ return `<div class="stat"><div class="n">${n}</div><div class="l">${l}</div></div>`; }
 
-async function addUser(){
-  const name=$('#nu-name').value.trim();
-  if(!name){ toast('أدخل اسم العضو'); return; }
-  let id=$('#nu-id').value.trim(), pass=$('#nu-pass').value.trim();
+let _lastCreds='';
+async function addUsers(){
+  const names = $('#nu-names').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  if(!names.length){ toast('أدخل اسماً واحداً على الأقل'); return; }
   const users = await store.get(K.users) || [];
-  if(!id){ do{ id=genId(); }while(users.some(u=>u.id===id)); }
-  else if(users.some(u=>u.id===id)){ toast('رقم العضوية مستخدم بالفعل'); return; }
-  if(!pass) pass=genPass();
-  users.push({uid:uid(),name,id,pass});
+  const created = [];
+  for(const name of names){
+    let id; do{ id=genId(); }while(users.some(u=>u.id===id)||created.some(c=>c.id===id));
+    const rec = {uid:uid(),name,id,pass:genPass()};
+    users.push(rec); created.push(rec);
+  }
   await store.set(K.users,users);
-  $('#nu-name').value='';$('#nu-id').value='';$('#nu-pass').value='';
+  $('#nu-names').value='';
+  _lastCreds = created.map(c=>`${c.name} — رقم العضوية: ${c.id} — كلمة المرور: ${c.pass}`).join('\n');
   $('#newcred').innerHTML = `<div class="credbox">
-    <div style="font-size:13px;color:var(--pitch);margin-bottom:9px;font-weight:700">✓ تم إنشاء العضو — شارك هذه البيانات معه</div>
-    <div class="row"><span><span style="color:var(--muted);font-family:'Tajawal';font-size:12px">الاسم: </span>${esc(name)}</span></div>
-    <div class="row" style="margin-top:6px"><span><span style="color:var(--muted);font-family:'Tajawal';font-size:12px">رقم العضوية: </span>${id}</span><button class="btn tiny ghost" onclick="copyTxt('${id}')">نسخ</button></div>
-    <div class="row" style="margin-top:6px"><span><span style="color:var(--muted);font-family:'Tajawal';font-size:12px">كلمة المرور: </span>${esc(pass)}</span><button class="btn tiny ghost" onclick="copyTxt('${esc(pass)}')">نسخ</button></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:11px;flex-wrap:wrap">
+      <div style="font-size:13px;color:var(--pitch);font-weight:700">✓ تم إنشاء ${created.length} عضو — شارك بياناتهم معهم</div>
+      <button class="btn tiny gold" onclick="copyTxt(_lastCreds)">نسخ بيانات الجميع</button>
+    </div>
+    ${created.map(c=>`<div class="row" style="margin-bottom:7px">
+      <span class="cred" style="font-size:15px">${esc(c.name)}</span>
+      <span style="font-family:'Reem Kufi';font-size:14px">${c.id} <span style="color:var(--muted)">·</span> ${esc(c.pass)}</span>
+    </div>`).join('')}
   </div>`;
   renderMembers(); renderAdminStats();
 }
