@@ -240,13 +240,14 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:24px 0}
     <!-- members -->
     <div id="admin-members">
       <div class="card" style="padding:16px">
-        <div class="section-h" style="margin-top:0"><h3>إضافة الأعضاء دفعة واحدة</h3></div>
-        <label>اكتب اسم كل عضو في سطر مستقل — سيُنشأ لكل واحد رقم عضوية وكلمة مرور تلقائياً</label>
-        <textarea id="nu-names" rows="5" placeholder="أحمد&#10;سارة&#10;خالد&#10;نورة"></textarea>
+        <div class="section-h" style="margin-top:0"><h3>إضافة الأعضاء</h3></div>
+        <label>اكتب في كل سطر: اسم العضو ثم فاصلة ثم كلمة المرور — مثال: أحمد، Ahmad123</label>
+        <textarea id="nu-names" rows="5" placeholder="أحمد، Ahmad123&#10;سارة، Sara2026&#10;خالد، Khaled99"></textarea>
+        <div class="note">رقم العضوية (اسم المستخدم) يتكوّن من 4 أرقام ويُنشأ تلقائياً. إن تركت كلمة المرور فارغة ستُولّد تلقائياً.</div>
         <button class="btn" style="margin-top:10px" onclick="addUsers()">إنشاء الأعضاء ومنح الدخول</button>
         <div id="newcred"></div>
       </div>
-      <div class="section-h"><h3>الأعضاء</h3><span class="mini" id="members-count"></span></div>
+      <div class="section-h"><h3>الأعضاء</h3><span style="display:flex;gap:8px;align-items:center"><span class="mini" id="members-count"></span><button class="btn tiny danger" onclick="deleteAllUsers()">حذف جميع الأعضاء</button></span></div>
       <div id="members-list"></div>
     </div>
 
@@ -637,15 +638,20 @@ function stat(n,l){ return `<div class="stat"><div class="n">${n}</div><div clas
 
 let _lastCreds='';
 async function addUsers(){
-  const names = $('#nu-names').value.split('\n').map(s=>s.trim()).filter(Boolean);
-  if(!names.length){ toast('أدخل اسماً واحداً على الأقل'); return; }
+  const lines = $('#nu-names').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  if(!lines.length){ toast('أدخل اسماً واحداً على الأقل'); return; }
   const users = await store.get(K.users) || [];
   const created = [];
-  for(const name of names){
+  for(const line of lines){
+    const parts = line.split(/[,،]/);
+    const name = parts[0].trim();
+    if(!name) continue;
+    const pass = parts.slice(1).join('،').trim() || genPass();
     let id; do{ id=genId(); }while(users.some(u=>u.id===id)||created.some(c=>c.id===id));
-    const rec = {uid:uid(),name,id,pass:genPass()};
+    const rec = {uid:uid(),name,id,pass};
     users.push(rec); created.push(rec);
   }
+  if(!created.length){ toast('تأكد من كتابة اسم في كل سطر'); return; }
   await store.set(K.users,users);
   $('#nu-names').value='';
   _lastCreds = created.map(c=>`${c.name} — رقم العضوية: ${c.id} — كلمة المرور: ${c.pass}`).join('\n');
@@ -703,7 +709,15 @@ async function delUser(uid){
   if(u) await store.del(K.pred(u.id));
   toast('تم حذف العضو'); renderMembers(); renderAdminStats();
 }
-
+async function deleteAllUsers(){
+  const users=await store.get(K.users)||[];
+  if(!users.length){ toast('لا يوجد أعضاء لحذفهم'); return; }
+  if(!confirm('سيتم حذف جميع الأعضاء الحاليين ('+users.length+') وكل توقّعاتهم. متابعة؟')) return;
+  for(const u of users) await store.del(K.pred(u.id));
+  await store.set(K.users,[]);
+  $('#newcred').innerHTML='';
+  toast('تم حذف جميع الأعضاء'); renderMembers(); renderAdminStats();
+}
 async function addMatch(){
   const t1=$('#nm-t1').value.trim(), t2=$('#nm-t2').value.trim(), time=$('#nm-time').value;
   if(!t1||!t2){ toast('أدخل اسمي الفريقين'); return; }
