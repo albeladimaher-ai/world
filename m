@@ -1,0 +1,945 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>توقعات كأس العالم 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@500;600;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#08160e;
+  --bg2:#0c2014;
+  --surface:#11291c;
+  --surface2:#16331f;
+  --line:#1f4530;
+  --line2:#2c5a3e;
+  --pitch:#22c55e;
+  --pitch-d:#16a34a;
+  --gold:#f5c344;
+  --gold-d:#caa033;
+  --cream:#f4f2e9;
+  --muted:#86a394;
+  --muted-d:#5d7868;
+  --danger:#f0584b;
+  --danger-bg:#2a1413;
+  --radius:16px;
+  --shadow:0 18px 40px -18px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:'Tajawal',system-ui,sans-serif;
+  background:
+    radial-gradient(1100px 520px at 80% -10%, rgba(34,197,94,.10), transparent 60%),
+    radial-gradient(900px 500px at 0% 0%, rgba(245,195,68,.06), transparent 55%),
+    var(--bg);
+  color:var(--cream);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  line-height:1.5;
+}
+h1,h2,h3,.display{font-family:'Reem Kufi',sans-serif;font-weight:700;letter-spacing:.2px}
+button{font-family:inherit;cursor:pointer}
+input,select,button{font-family:inherit}
+input,select{
+  width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--cream);
+  padding:11px 13px;border-radius:11px;font-size:15px;outline:none;transition:border-color .15s,box-shadow .15s;
+}
+input:focus,select:focus{border-color:var(--pitch);box-shadow:0 0 0 3px rgba(34,197,94,.16)}
+input::placeholder{color:var(--muted-d)}
+label{display:block;font-size:13px;color:var(--muted);margin:0 2px 6px;font-weight:500}
+.field{margin-bottom:13px}
+.btn{
+  border:none;border-radius:11px;padding:12px 18px;font-size:15px;font-weight:700;
+  background:linear-gradient(180deg,var(--pitch),var(--pitch-d));color:#04150b;
+  transition:transform .08s,filter .15s;width:100%;
+}
+.btn:hover{filter:brightness(1.06)}
+.btn:active{transform:translateY(1px)}
+.btn.gold{background:linear-gradient(180deg,var(--gold),var(--gold-d));color:#241b00}
+.btn.ghost{background:transparent;border:1px solid var(--line2);color:var(--cream)}
+.btn.ghost:hover{background:var(--surface2)}
+.btn.danger{background:transparent;border:1px solid #6b2a26;color:var(--danger)}
+.btn.danger:hover{background:var(--danger-bg)}
+.btn.sm{padding:8px 13px;font-size:13.5px;width:auto}
+.btn.tiny{padding:6px 11px;font-size:12.5px;width:auto;border-radius:9px}
+.wrap{max-width:920px;margin:0 auto;padding:18px 16px 60px}
+.center-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:22px 16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.hidden{display:none!important}
+
+/* ---- header ---- */
+.brand{display:flex;align-items:center;gap:11px}
+.brand .logo{
+  width:46px;height:46px;border-radius:13px;display:grid;place-items:center;font-size:24px;
+  background:linear-gradient(150deg,#0e2a1a,#16331f);border:1px solid var(--line2);
+}
+.brand .t1{font-size:12px;color:var(--gold);letter-spacing:3px;font-weight:700;font-family:'Tajawal'}
+.brand .t2{font-size:20px;line-height:1.15;margin-top:1px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+
+/* ---- login ---- */
+.login-card{width:100%;max-width:420px;padding:30px 26px}
+.login-head{text-align:center;margin-bottom:22px}
+.login-head .logo{width:64px;height:64px;border-radius:18px;margin:0 auto 14px;font-size:34px}
+.login-head h1{font-size:24px;margin:0}
+.login-head p{color:var(--muted);font-size:14px;margin:6px 0 0}
+.tabs{display:flex;gap:6px;background:var(--bg2);padding:5px;border-radius:13px;margin-bottom:20px;border:1px solid var(--line)}
+.tabs button{flex:1;border:none;background:transparent;color:var(--muted);padding:9px;border-radius:9px;font-weight:700;font-size:14px;transition:.15s}
+.tabs button.active{background:var(--surface2);color:var(--cream);box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.msg{font-size:13.5px;padding:10px 12px;border-radius:10px;margin-top:4px}
+.msg.err{background:var(--danger-bg);color:var(--danger);border:1px solid #5a2420}
+.msg.ok{background:rgba(34,197,94,.1);color:var(--pitch);border:1px solid var(--line2)}
+
+/* ---- stat chips ---- */
+.points-pill{display:inline-flex;align-items:center;gap:7px;background:linear-gradient(180deg,rgba(245,195,68,.18),rgba(245,195,68,.06));border:1px solid var(--gold-d);color:var(--gold);padding:7px 14px;border-radius:999px;font-weight:800;font-size:15px}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:18px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:13px 14px}
+.stat .n{font-size:24px;font-weight:800;font-family:'Reem Kufi'}
+.stat .l{font-size:12.5px;color:var(--muted);margin-top:2px}
+
+/* ---- nav tabs ---- */
+.navtabs{display:flex;gap:7px;margin-bottom:18px;overflow-x:auto;padding-bottom:2px}
+.navtabs button{white-space:nowrap;border:1px solid var(--line);background:var(--surface);color:var(--muted);padding:9px 16px;border-radius:11px;font-weight:700;font-size:14px;transition:.15s}
+.navtabs button.active{background:var(--surface2);color:var(--cream);border-color:var(--line2)}
+
+/* ---- match / scoreboard card ---- */
+.match{background:var(--surface);border:1px solid var(--line);border-radius:15px;padding:14px;margin-bottom:13px;overflow:hidden}
+.match .meta{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;font-size:12.5px;color:var(--muted)}
+.match .meta .kickoff{font-weight:600;color:var(--cream)}
+.deadline{display:flex;align-items:center;gap:6px;margin:0 0 12px;font-size:12.5px;color:var(--gold);background:rgba(245,195,68,.07);border:1px solid var(--gold-d);border-radius:9px;padding:7px 11px}
+.deadline.passed{color:var(--muted);background:var(--bg2);border-color:var(--line)}
+.deadline b{color:inherit;font-weight:700}
+.badge{font-size:11.5px;font-weight:700;padding:4px 9px;border-radius:999px;border:1px solid var(--line2)}
+.badge.open{color:var(--pitch);background:rgba(34,197,94,.1)}
+.badge.locked{color:var(--gold);background:rgba(245,195,68,.08)}
+.badge.done{color:var(--muted);background:var(--bg2)}
+.board{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px}
+.team{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;min-width:0}
+.team .flag{font-size:34px;line-height:1}
+.team .nm{font-weight:700;font-size:15px;word-break:break-word}
+.score-mid{display:flex;align-items:center;gap:7px}
+.score-mid input{width:54px;text-align:center;font-size:22px;font-weight:800;font-family:'Reem Kufi';padding:8px 4px;background:#04130b;border-color:var(--line2)}
+.score-mid .colon{color:var(--muted);font-weight:800;font-size:20px}
+.score-final{display:flex;align-items:center;gap:9px;font-family:'Reem Kufi';font-weight:700;font-size:26px}
+.match .foot{margin-top:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.your-pred{font-size:13px;color:var(--muted)}
+.your-pred b{color:var(--cream)}
+.pts-tag{font-weight:800;font-size:14px;padding:5px 12px;border-radius:999px}
+.pts-tag.p3{color:var(--pitch);background:rgba(34,197,94,.12);border:1px solid var(--line2)}
+.pts-tag.p1{color:var(--gold);background:rgba(245,195,68,.1);border:1px solid var(--gold-d)}
+.pts-tag.pm{color:var(--danger);background:var(--danger-bg);border:1px solid #5a2420}
+.pts-tag.p0{color:var(--muted);background:var(--bg2);border:1px solid var(--line)}
+
+/* ---- table ---- */
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px}
+table{width:100%;border-collapse:collapse;font-size:14px;min-width:480px}
+th,td{padding:11px 12px;text-align:right}
+thead th{background:var(--bg2);color:var(--muted);font-size:12.5px;font-weight:700;white-space:nowrap}
+tbody tr{border-top:1px solid var(--line)}
+tbody tr.me{background:rgba(34,197,94,.07)}
+.rank{font-family:'Reem Kufi';font-weight:700;width:34px}
+.rank.r1{color:var(--gold)} .rank.r2{color:#cdd6cf} .rank.r3{color:#c98a52}
+.mini{font-size:12px;color:var(--muted)}
+
+/* ---- admin lists ---- */
+.section-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:22px 2px 12px}
+.section-h h3{font-size:17px;margin:0}
+.row-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;margin-bottom:9px;background:var(--surface);flex-wrap:wrap}
+.cred{font-family:'Reem Kufi';letter-spacing:.5px}
+.cred span{color:var(--muted);font-family:'Tajawal';font-size:12px}
+.inline-form{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.inline-form .full{grid-column:1/-1}
+.credbox{background:rgba(34,197,94,.07);border:1px dashed var(--line2);border-radius:12px;padding:13px 15px;margin-top:6px}
+.credbox .row{display:flex;justify-content:space-between;align-items:center;gap:10px;font-family:'Reem Kufi';font-size:16px}
+.note{font-size:12.5px;color:var(--muted);background:var(--bg2);border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin-top:10px}
+.persist-warn{background:var(--danger-bg);border:1px solid #5a2420;color:#f3a59d;font-size:13px;padding:11px 14px;border-radius:12px;margin-bottom:16px}
+.empty{text-align:center;color:var(--muted);padding:34px 16px;border:1px dashed var(--line);border-radius:14px}
+.empty .ic{font-size:32px;margin-bottom:8px}
+hr.sep{border:none;border-top:1px solid var(--line);margin:24px 0}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-bottom:16px}
+.legend b{color:var(--cream)}
+@media(max-width:520px){
+  .inline-form{grid-template-columns:1fr}
+  .team .nm{font-size:13.5px}
+  .team .flag{font-size:28px}
+}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--line2);color:var(--cream);padding:12px 20px;border-radius:12px;font-weight:700;font-size:14px;box-shadow:var(--shadow);z-index:99;opacity:0;transition:.25s;pointer-events:none}
+.toast.show{opacity:1;bottom:30px}
+</style>
+</head>
+<body>
+
+<!-- ============ SETUP (first run) ============ -->
+<div id="view-setup" class="center-screen hidden">
+  <div class="card login-card">
+    <div class="login-head">
+      <div class="logo brand-logo">🏆</div>
+      <h1>تهيئة المنصة</h1>
+      <p>أنشئ كلمة مرور المشرف للبدء. ستحتاجها لإدارة الأعضاء والمباريات.</p>
+    </div>
+    <div class="field">
+      <label>كلمة مرور المشرف</label>
+      <input id="setup-pass" type="password" placeholder="اختر كلمة مرور قوية">
+    </div>
+    <div class="field">
+      <label>تأكيد كلمة المرور</label>
+      <input id="setup-pass2" type="password" placeholder="أعد كتابة كلمة المرور">
+    </div>
+    <button class="btn gold" onclick="doSetup()">إنشاء حساب المشرف</button>
+    <div id="setup-msg"></div>
+  </div>
+</div>
+
+<!-- ============ LOGIN ============ -->
+<div id="view-login" class="center-screen hidden">
+  <div class="card login-card">
+    <div class="login-head">
+      <div class="logo">🏆</div>
+      <div class="t1" style="color:var(--gold);letter-spacing:3px;font-size:11px;font-weight:700">WORLD CUP 2026</div>
+      <h1>توقعات كأس العالم</h1>
+      <p>سجّل الدخول لتوقّع نتائج المباريات</p>
+    </div>
+    <div class="tabs">
+      <button id="tab-user" class="active" onclick="switchLogin('user')">عضو</button>
+      <button id="tab-admin" onclick="switchLogin('admin')">مشرف</button>
+    </div>
+
+    <div id="login-user">
+      <div class="field">
+        <label>رقم العضوية</label>
+        <input id="u-id" inputmode="numeric" placeholder="مثال: 1042">
+      </div>
+      <div class="field">
+        <label>كلمة المرور</label>
+        <input id="u-pass" type="password" placeholder="كلمة المرور التي منحها لك المشرف">
+      </div>
+      <button class="btn" onclick="userLogin()">دخول</button>
+    </div>
+
+    <div id="login-admin" class="hidden">
+      <div class="field">
+        <label>كلمة مرور المشرف</label>
+        <input id="a-pass" type="password" placeholder="••••••••">
+      </div>
+      <button class="btn gold" onclick="adminLogin()">دخول المشرف</button>
+    </div>
+    <div id="login-msg"></div>
+  </div>
+</div>
+
+<!-- ============ ADMIN ============ -->
+<div id="view-admin" class="hidden">
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo">🛠️</div>
+        <div><div class="t1">لوحة المشرف</div><div class="t2 display">إدارة المنصة</div></div>
+      </div>
+      <button class="btn ghost sm" onclick="logout()">خروج</button>
+    </div>
+
+    <div id="admin-persist" class="persist-warn hidden"></div>
+
+    <div class="statgrid" id="admin-stats"></div>
+
+    <div class="navtabs" id="admin-nav">
+      <button class="active" onclick="adminTab('members',this)">الأعضاء</button>
+      <button onclick="adminTab('matches',this)">المباريات</button>
+      <button onclick="adminTab('standings',this)">الترتيب</button>
+      <button onclick="adminTab('settings',this)">الإعدادات</button>
+    </div>
+
+    <!-- members -->
+    <div id="admin-members">
+      <div class="card" style="padding:16px">
+        <div class="section-h" style="margin-top:0"><h3>إضافة عضو جديد</h3></div>
+        <div class="inline-form">
+          <div class="full"><label>اسم العضو</label><input id="nu-name" placeholder="مثال: أحمد"></div>
+          <div><label>رقم العضوية (اختياري)</label><input id="nu-id" inputmode="numeric" placeholder="يُولّد تلقائياً"></div>
+          <div><label>كلمة المرور (اختياري)</label><input id="nu-pass" placeholder="تُولّد تلقائياً"></div>
+        </div>
+        <button class="btn" style="margin-top:6px" onclick="addUser()">إضافة العضو ومنح الدخول</button>
+        <div id="newcred"></div>
+      </div>
+      <div class="section-h"><h3>الأعضاء</h3><span class="mini" id="members-count"></span></div>
+      <div id="members-list"></div>
+    </div>
+
+    <!-- matches -->
+    <div id="admin-matches" class="hidden">
+      <div class="card" style="padding:16px;margin-bottom:14px;border-color:var(--line2)">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div>
+            <div class="display" style="font-size:16px">جدول كأس العالم 2026</div>
+            <div class="mini" style="margin-top:3px">حمّل مباريات دور المجموعات الرسمية (72 مباراة) بأعلامها ومواعيدها بنقرة واحدة.</div>
+          </div>
+          <button class="btn gold sm" onclick="loadSchedule()">تحميل الجدول الرسمي</button>
+        </div>
+      </div>
+      <div class="card" style="padding:16px">
+        <div class="section-h" style="margin-top:0"><h3>إضافة مباراة</h3></div>
+        <div class="inline-form">
+          <div><label>الفريق الأول</label><input id="nm-t1" placeholder="مثال: الأرجنتين"></div>
+          <div><label>الفريق الثاني</label><input id="nm-t2" placeholder="مثال: البرازيل"></div>
+          <div class="full"><label>موعد المباراة</label><input id="nm-time" type="datetime-local"></div>
+        </div>
+        <div class="note">يُغلق التوقّع تلقائياً قبل المباراة بـ 20 دقيقة. الأعلام تُضاف تلقائياً حسب اسم الدولة.</div>
+        <button class="btn" style="margin-top:10px" onclick="addMatch()">إضافة المباراة</button>
+      </div>
+      <div class="section-h"><h3>المباريات</h3><span class="mini" id="matches-count"></span></div>
+      <div id="matches-admin-list"></div>
+    </div>
+
+    <!-- standings -->
+    <div id="admin-standings" class="hidden">
+      <div class="legend">
+        <span><b>+3</b> توقّع مطابق</span>
+        <span><b>+1</b> فائز صحيح بنتيجة مختلفة</span>
+        <span><b>0</b> توقّع خاطئ (لا خصم)</span>
+      </div>
+      <div id="standings-admin"></div>
+    </div>
+
+    <!-- settings -->
+    <div id="admin-settings" class="hidden">
+      <div class="card" style="padding:16px">
+        <div class="section-h" style="margin-top:0"><h3>تغيير كلمة مرور المشرف</h3></div>
+        <div class="field"><label>كلمة المرور الجديدة</label><input id="new-admin-pass" type="password" placeholder="••••••••"></div>
+        <button class="btn gold sm" onclick="changeAdminPass()">حفظ</button>
+      </div>
+      <hr class="sep">
+      <div class="card" style="padding:16px;border-color:#5a2420">
+        <div class="section-h" style="margin-top:0"><h3 style="color:var(--danger)">منطقة الخطر</h3></div>
+        <p class="mini" style="margin:0 0 12px">حذف جميع الأعضاء والمباريات والتوقعات. لا يمكن التراجع.</p>
+        <button class="btn danger sm" onclick="resetAll()">إعادة ضبط كل البيانات</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ USER ============ -->
+<div id="view-user" class="hidden">
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo">🏆</div>
+        <div><div class="t1">مرحباً</div><div class="t2 display" id="u-name">—</div></div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <span class="points-pill" id="u-points">⭐ 0</span>
+        <button class="btn ghost sm" onclick="logout()">خروج</button>
+      </div>
+    </div>
+
+    <div class="statgrid" id="user-stats"></div>
+
+    <div class="navtabs" id="user-nav">
+      <button class="active" onclick="userTab('matches',this)">المباريات</button>
+      <button onclick="userTab('mine',this)">توقعاتي</button>
+      <button onclick="userTab('board',this)">الترتيب</button>
+    </div>
+
+    <div id="user-matches"></div>
+    <div id="user-mine" class="hidden"></div>
+    <div id="user-board" class="hidden">
+      <div class="legend">
+        <span><b>+3</b> توقّع مطابق</span>
+        <span><b>+1</b> فائز صحيح بنتيجة مختلفة</span>
+        <span><b>0</b> توقّع خاطئ (لا خصم)</span>
+      </div>
+      <div id="board-user"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+/* ================= STORAGE LAYER ================= */
+let NO_PERSIST = false;
+(function(){
+  if(!window.storage){
+    NO_PERSIST = true;
+    const mem = {};
+    window.storage = {
+      async get(k){ if(!(k in mem)) throw new Error('not found'); return {key:k,value:mem[k],shared:true}; },
+      async set(k,v){ mem[k]=v; return {key:k,value:v,shared:true}; },
+      async delete(k){ delete mem[k]; return {key:k,deleted:true}; },
+      async list(p){ return {keys:Object.keys(mem).filter(x=>x.startsWith(p||'')),shared:true}; }
+    };
+  }
+})();
+const SH = true;
+const K = {
+  admin:'wc26_admin', users:'wc26_users', matches:'wc26_matches',
+  pred:(id)=>'wc26_pred_'+id
+};
+const store = {
+  async get(key){ try{ const r=await window.storage.get(key,SH); return r?JSON.parse(r.value):null; }catch(e){ return null; } },
+  async set(key,val){ try{ await window.storage.set(key,JSON.stringify(val),SH); return true; }catch(e){ toast('تعذّر الحفظ'); return false; } },
+  async del(key){ try{ await window.storage.delete(key,SH); }catch(e){} },
+  async listKeys(prefix){ try{ const r=await window.storage.list(prefix,SH); return r?r.keys:[]; }catch(e){ return []; } }
+};
+
+/* ================= FLAGS ================= */
+const FLAGS = {
+  'الارجنتين':'🇦🇷','الأرجنتين':'🇦🇷','argentina':'🇦🇷',
+  'البرازيل':'🇧🇷','brazil':'🇧🇷',
+  'فرنسا':'🇫🇷','france':'🇫🇷',
+  'انجلترا':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','إنجلترا':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','england':'🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+  'اسبانيا':'🇪🇸','إسبانيا':'🇪🇸','spain':'🇪🇸',
+  'المانيا':'🇩🇪','ألمانيا':'🇩🇪','germany':'🇩🇪',
+  'البرتغال':'🇵🇹','portugal':'🇵🇹',
+  'هولندا':'🇳🇱','netherlands':'🇳🇱',
+  'بلجيكا':'🇧🇪','belgium':'🇧🇪',
+  'كرواتيا':'🇭🇷','croatia':'🇭🇷',
+  'ايطاليا':'🇮🇹','إيطاليا':'🇮🇹','italy':'🇮🇹',
+  'امريكا':'🇺🇸','أمريكا':'🇺🇸','الولايات المتحدة':'🇺🇸','usa':'🇺🇸',
+  'المكسيك':'🇲🇽','mexico':'🇲🇽',
+  'كندا':'🇨🇦','canada':'🇨🇦',
+  'المغرب':'🇲🇦','morocco':'🇲🇦',
+  'اليابان':'🇯🇵','japan':'🇯🇵',
+  'كوريا الجنوبية':'🇰🇷','كوريا':'🇰🇷','korea':'🇰🇷',
+  'السعودية':'🇸🇦','saudi':'🇸🇦',
+  'السنغال':'🇸🇳','senegal':'🇸🇳',
+  'الاوروغواي':'🇺🇾','الأوروغواي':'🇺🇾','uruguay':'🇺🇾',
+  'كولومبيا':'🇨🇴','colombia':'🇨🇴',
+  'سويسرا':'🇨🇭','switzerland':'🇨🇭',
+  'الدنمارك':'🇩🇰','denmark':'🇩🇰',
+  'بولندا':'🇵🇱','poland':'🇵🇱',
+  'استراليا':'🇦🇺','أستراليا':'🇦🇺','australia':'🇦🇺',
+  'غانا':'🇬🇭','ghana':'🇬🇭',
+  'مصر':'🇪🇬','egypt':'🇪🇬',
+  'قطر':'🇶🇦','qatar':'🇶🇦',
+  'الاكوادور':'🇪🇨','الإكوادور':'🇪🇨','ecuador':'🇪🇨',
+  'ايران':'🇮🇷','إيران':'🇮🇷','iran':'🇮🇷',
+  'تونس':'🇹🇳','tunisia':'🇹🇳',
+  'الجزائر':'🇩🇿','algeria':'🇩🇿',
+  'نيجيريا':'🇳🇬','nigeria':'🇳🇬',
+  'الكاميرون':'🇨🇲','cameroon':'🇨🇲',
+  'صربيا':'🇷🇸','serbia':'🇷🇸',
+  'كوستاريكا':'🇨🇷','costa rica':'🇨🇷',
+  'الاكوادر':'🇪🇨','اوزبكستان':'🇺🇿','أوزبكستان':'🇺🇿','uzbekistan':'🇺🇿',
+  'الاردن':'🇯🇴','الأردن':'🇯🇴','jordan':'🇯🇴',
+  'الامارات':'🇦🇪','الإمارات':'🇦🇪','عمان':'🇴🇲','الكويت':'🇰🇼','العراق':'🇮🇶','iraq':'🇮🇶',
+  'النرويج':'🇳🇴','norway':'🇳🇴','تركيا':'🇹🇷','turkey':'🇹🇷','اوكرانيا':'🇺🇦','أوكرانيا':'🇺🇦',
+  'النمسا':'🇦🇹','austria':'🇦🇹','اسكتلندا':'🏴󠁧󠁢󠁳󠁣󠁴󠁿','ويلز':'🏴󠁧󠁢󠁷󠁬󠁳󠁿','بنما':'🇵🇦','هايتي':'🇭🇹',
+  'كاب فيردي':'🇨🇻','الرأس الأخضر':'🇨🇻','جنوب افريقيا':'🇿🇦','جنوب أفريقيا':'🇿🇦','south africa':'🇿🇦',
+  'التشيك':'🇨🇿','czechia':'🇨🇿','البوسنة':'🇧🇦','bosnia':'🇧🇦','باراغواي':'🇵🇾','paraguay':'🇵🇾',
+  'السويد':'🇸🇪','sweden':'🇸🇪','نيوزيلندا':'🇳🇿','new zealand':'🇳🇿','كوراساو':'🇨🇼','curacao':'🇨🇼',
+  'ساحل العاج':'🇨🇮','ivory coast':'🇨🇮','الكونغو الديمقراطية':'🇨🇩','الكونغو':'🇨🇩','dr congo':'🇨🇩','drc':'🇨🇩',
+  'كولومبيا ':'🇨🇴'
+};
+function flagFor(name){
+  const n = (name||'').trim().toLowerCase();
+  return FLAGS[n] || FLAGS[(name||'').trim()] || '⚽';
+}
+
+/* ===== الجدول الرسمي — دور المجموعات (المواعيد بتوقيت غرينتش UTC، تُعرض بتوقيتك المحلي) ===== */
+function M(t1,f1,t2,f2,k){ return {t1,f1,t2,f2,k}; }
+const SCHEDULE = [
+  M('المكسيك','🇲🇽','جنوب أفريقيا','🇿🇦','2026-06-11T19:00:00Z'),
+  M('كوريا الجنوبية','🇰🇷','التشيك','🇨🇿','2026-06-12T02:00:00Z'),
+  M('كندا','🇨🇦','البوسنة','🇧🇦','2026-06-12T19:00:00Z'),
+  M('الولايات المتحدة','🇺🇸','باراغواي','🇵🇾','2026-06-13T01:00:00Z'),
+  M('قطر','🇶🇦','سويسرا','🇨🇭','2026-06-13T19:00:00Z'),
+  M('البرازيل','🇧🇷','المغرب','🇲🇦','2026-06-13T22:00:00Z'),
+  M('هايتي','🇭🇹','اسكتلندا','🏴󠁧󠁢󠁳󠁣󠁴󠁿','2026-06-14T01:00:00Z'),
+  M('أستراليا','🇦🇺','تركيا','🇹🇷','2026-06-14T04:00:00Z'),
+  M('ألمانيا','🇩🇪','كوراساو','🇨🇼','2026-06-14T17:00:00Z'),
+  M('هولندا','🇳🇱','اليابان','🇯🇵','2026-06-14T20:00:00Z'),
+  M('ساحل العاج','🇨🇮','الإكوادور','🇪🇨','2026-06-14T23:00:00Z'),
+  M('السويد','🇸🇪','تونس','🇹🇳','2026-06-15T02:00:00Z'),
+  M('إسبانيا','🇪🇸','الرأس الأخضر','🇨🇻','2026-06-15T16:00:00Z'),
+  M('بلجيكا','🇧🇪','مصر','🇪🇬','2026-06-15T19:00:00Z'),
+  M('السعودية','🇸🇦','الأوروغواي','🇺🇾','2026-06-15T22:00:00Z'),
+  M('إيران','🇮🇷','نيوزيلندا','🇳🇿','2026-06-16T01:00:00Z'),
+  M('فرنسا','🇫🇷','السنغال','🇸🇳','2026-06-16T19:00:00Z'),
+  M('العراق','🇮🇶','النرويج','🇳🇴','2026-06-16T22:00:00Z'),
+  M('الأرجنتين','🇦🇷','الجزائر','🇩🇿','2026-06-17T01:00:00Z'),
+  M('النمسا','🇦🇹','الأردن','🇯🇴','2026-06-17T04:00:00Z'),
+  M('البرتغال','🇵🇹','الكونغو الديمقراطية','🇨🇩','2026-06-17T17:00:00Z'),
+  M('إنجلترا','🏴󠁧󠁢󠁥󠁮󠁧󠁿','كرواتيا','🇭🇷','2026-06-17T20:00:00Z'),
+  M('غانا','🇬🇭','بنما','🇵🇦','2026-06-17T23:00:00Z'),
+  M('أوزبكستان','🇺🇿','كولومبيا','🇨🇴','2026-06-18T02:00:00Z'),
+  M('التشيك','🇨🇿','جنوب أفريقيا','🇿🇦','2026-06-18T16:00:00Z'),
+  M('سويسرا','🇨🇭','البوسنة','🇧🇦','2026-06-18T19:00:00Z'),
+  M('كندا','🇨🇦','قطر','🇶🇦','2026-06-18T22:00:00Z'),
+  M('المكسيك','🇲🇽','كوريا الجنوبية','🇰🇷','2026-06-19T01:00:00Z'),
+  M('الولايات المتحدة','🇺🇸','أستراليا','🇦🇺','2026-06-19T19:00:00Z'),
+  M('اسكتلندا','🏴󠁧󠁢󠁳󠁣󠁴󠁿','المغرب','🇲🇦','2026-06-19T22:00:00Z'),
+  M('البرازيل','🇧🇷','هايتي','🇭🇹','2026-06-20T00:30:00Z'),
+  M('تركيا','🇹🇷','باراغواي','🇵🇾','2026-06-20T03:00:00Z'),
+  M('هولندا','🇳🇱','السويد','🇸🇪','2026-06-20T17:00:00Z'),
+  M('ألمانيا','🇩🇪','ساحل العاج','🇨🇮','2026-06-20T20:00:00Z'),
+  M('الإكوادور','🇪🇨','كوراساو','🇨🇼','2026-06-21T03:00:00Z'),
+  M('تونس','🇹🇳','اليابان','🇯🇵','2026-06-21T04:00:00Z'),
+  M('إسبانيا','🇪🇸','السعودية','🇸🇦','2026-06-21T16:00:00Z'),
+  M('بلجيكا','🇧🇪','إيران','🇮🇷','2026-06-21T19:00:00Z'),
+  M('الأوروغواي','🇺🇾','الرأس الأخضر','🇨🇻','2026-06-21T22:00:00Z'),
+  M('نيوزيلندا','🇳🇿','مصر','🇪🇬','2026-06-22T01:00:00Z'),
+  M('الأرجنتين','🇦🇷','النمسا','🇦🇹','2026-06-22T17:00:00Z'),
+  M('فرنسا','🇫🇷','العراق','🇮🇶','2026-06-22T21:00:00Z'),
+  M('النرويج','🇳🇴','السنغال','🇸🇳','2026-06-23T00:00:00Z'),
+  M('الأردن','🇯🇴','الجزائر','🇩🇿','2026-06-23T03:00:00Z'),
+  M('البرتغال','🇵🇹','أوزبكستان','🇺🇿','2026-06-23T17:00:00Z'),
+  M('إنجلترا','🏴󠁧󠁢󠁥󠁮󠁧󠁿','غانا','🇬🇭','2026-06-23T20:00:00Z'),
+  M('بنما','🇵🇦','كرواتيا','🇭🇷','2026-06-23T23:00:00Z'),
+  M('كولومبيا','🇨🇴','الكونغو الديمقراطية','🇨🇩','2026-06-24T02:00:00Z'),
+  M('سويسرا','🇨🇭','كندا','🇨🇦','2026-06-24T19:00:00Z'),
+  M('البوسنة','🇧🇦','قطر','🇶🇦','2026-06-24T19:00:00Z'),
+  M('اسكتلندا','🏴󠁧󠁢󠁳󠁣󠁴󠁿','البرازيل','🇧🇷','2026-06-24T22:00:00Z'),
+  M('المغرب','🇲🇦','هايتي','🇭🇹','2026-06-24T22:00:00Z'),
+  M('التشيك','🇨🇿','المكسيك','🇲🇽','2026-06-25T01:00:00Z'),
+  M('جنوب أفريقيا','🇿🇦','كوريا الجنوبية','🇰🇷','2026-06-25T01:00:00Z'),
+  M('الإكوادور','🇪🇨','ألمانيا','🇩🇪','2026-06-25T20:00:00Z'),
+  M('كوراساو','🇨🇼','ساحل العاج','🇨🇮','2026-06-25T20:00:00Z'),
+  M('اليابان','🇯🇵','السويد','🇸🇪','2026-06-25T23:00:00Z'),
+  M('تونس','🇹🇳','هولندا','🇳🇱','2026-06-25T23:00:00Z'),
+  M('تركيا','🇹🇷','الولايات المتحدة','🇺🇸','2026-06-26T02:00:00Z'),
+  M('باراغواي','🇵🇾','أستراليا','🇦🇺','2026-06-26T02:00:00Z'),
+  M('النرويج','🇳🇴','فرنسا','🇫🇷','2026-06-26T19:00:00Z'),
+  M('السنغال','🇸🇳','العراق','🇮🇶','2026-06-26T19:00:00Z'),
+  M('الرأس الأخضر','🇨🇻','السعودية','🇸🇦','2026-06-27T00:00:00Z'),
+  M('الأوروغواي','🇺🇾','إسبانيا','🇪🇸','2026-06-27T00:00:00Z'),
+  M('مصر','🇪🇬','إيران','🇮🇷','2026-06-27T03:00:00Z'),
+  M('نيوزيلندا','🇳🇿','بلجيكا','🇧🇪','2026-06-27T03:00:00Z'),
+  M('بنما','🇵🇦','إنجلترا','🏴󠁧󠁢󠁥󠁮󠁧󠁿','2026-06-27T21:00:00Z'),
+  M('كرواتيا','🇭🇷','غانا','🇬🇭','2026-06-27T21:00:00Z'),
+  M('كولومبيا','🇨🇴','البرتغال','🇵🇹','2026-06-27T23:30:00Z'),
+  M('الكونغو الديمقراطية','🇨🇩','أوزبكستان','🇺🇿','2026-06-27T23:30:00Z'),
+  M('الجزائر','🇩🇿','النمسا','🇦🇹','2026-06-28T02:00:00Z'),
+  M('الأردن','🇯🇴','الأرجنتين','🇦🇷','2026-06-28T02:00:00Z')
+];
+
+/* ================= HELPERS ================= */
+const $ = s=>document.querySelector(s);
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function genId(){ return String(1000+Math.floor(Math.random()*9000)); }
+function genPass(){ const c='abcdefghjkmnpqrstuvwxyz23456789'; let p=''; for(let i=0;i<6;i++)p+=c[Math.floor(Math.random()*c.length)]; return p; }
+function show(id){ ['view-setup','view-login','view-admin','view-user'].forEach(v=>$('#'+v).classList.toggle('hidden',v!==id)); }
+function esc(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),1900); }
+function fmtDate(iso){
+  if(!iso) return '';
+  const d=new Date(iso);
+  return d.toLocaleString('ar',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+}
+function fmtFull(t){
+  const d=new Date(t);
+  const date=d.toLocaleDateString('ar',{weekday:'long',day:'numeric',month:'long'});
+  const time=d.toLocaleTimeString('ar',{hour:'2-digit',minute:'2-digit'});
+  return date+' — '+time;
+}
+const LOCK_MS = 20*60*1000;
+function lockTime(m){ return new Date(m.kickoff).getTime() - LOCK_MS; }
+function isLocked(m){ if(m.status==='finished') return true; return Date.now() >= lockTime(m); }
+function countdownText(m){
+  const diff = lockTime(m) - Date.now();
+  if(diff<=0) return null;
+  const h=Math.floor(diff/3600000), mn=Math.floor((diff%3600000)/60000);
+  if(h>24){ const d=Math.floor(h/24); return 'يُغلق بعد '+d+' يوم'; }
+  if(h>0) return 'يُغلق بعد '+h+' س '+mn+' د';
+  return 'يُغلق بعد '+mn+' دقيقة';
+}
+function scoreFor(p,m){
+  if(!p || m.status!=='finished') return null;
+  if(p.a===m.r1 && p.b===m.r2) return 3;
+  const ps=Math.sign(p.a-p.b), rs=Math.sign(m.r1-m.r2);
+  return ps===rs ? 1 : 0;
+}
+function ptsTag(s){
+  if(s===3) return '<span class="pts-tag p3">+3 مطابق</span>';
+  if(s===1) return '<span class="pts-tag p1">+1 فائز صحيح</span>';
+  if(s===0) return '<span class="pts-tag pm">توقّع خاطئ · 0</span>';
+  return '<span class="pts-tag p0">بدون توقّع</span>';
+}
+async function sortedMatches(){
+  const m = await store.get(K.matches) || [];
+  return m.slice().sort((a,b)=> new Date(a.kickoff)-new Date(b.kickoff));
+}
+
+/* ================= AUTH STATE ================= */
+let CUR = null; // {role:'admin'} or {role:'user', user:{...}}
+
+/* ================= INIT ================= */
+(async function init(){
+  const admin = await store.get(K.admin);
+  if(!admin){ show('view-setup'); }
+  else { show('view-login'); }
+})();
+
+async function doSetup(){
+  const p=$('#setup-pass').value, p2=$('#setup-pass2').value;
+  const msg=$('#setup-msg');
+  if(p.length<4){ msg.innerHTML='<div class="msg err">كلمة المرور قصيرة جداً (4 أحرف على الأقل).</div>'; return; }
+  if(p!==p2){ msg.innerHTML='<div class="msg err">كلمتا المرور غير متطابقتين.</div>'; return; }
+  await store.set(K.admin,{pass:p});
+  if(!(await store.get(K.users))) await store.set(K.users,[]);
+  if(!(await store.get(K.matches))) await store.set(K.matches,[]);
+  toast('تم إنشاء حساب المشرف');
+  show('view-login'); switchLogin('admin');
+}
+
+/* ================= LOGIN ================= */
+function switchLogin(which){
+  $('#tab-user').classList.toggle('active',which==='user');
+  $('#tab-admin').classList.toggle('active',which==='admin');
+  $('#login-user').classList.toggle('hidden',which!=='user');
+  $('#login-admin').classList.toggle('hidden',which!=='admin');
+  $('#login-msg').innerHTML='';
+}
+async function adminLogin(){
+  const admin = await store.get(K.admin);
+  if($('#a-pass').value === admin.pass){ CUR={role:'admin'}; $('#a-pass').value=''; openAdmin(); }
+  else $('#login-msg').innerHTML='<div class="msg err">كلمة مرور المشرف غير صحيحة.</div>';
+}
+async function userLogin(){
+  const id=$('#u-id').value.trim(), pass=$('#u-pass').value;
+  const users = await store.get(K.users) || [];
+  const u = users.find(x=>x.id===id && x.pass===pass);
+  if(u){ CUR={role:'user',user:u}; $('#u-id').value='';$('#u-pass').value=''; openUser(); }
+  else $('#login-msg').innerHTML='<div class="msg err">رقم العضوية أو كلمة المرور غير صحيحة.</div>';
+}
+function logout(){ CUR=null; clearInterval(window._tick); show('view-login'); switchLogin('user'); }
+
+/* ================= ADMIN ================= */
+async function openAdmin(){
+  show('view-admin');
+  if(NO_PERSIST){ $('#admin-persist').classList.remove('hidden'); $('#admin-persist').textContent='تنبيه: يبدو أن المنصة تعمل بدون تخزين دائم — البيانات لن تُحفظ بعد إغلاق الصفحة. افتحها داخل تطبيق Claude لتفعيل الحفظ.'; }
+  await renderAdminStats();
+  await adminTabRefresh();
+}
+function adminTab(name,btn){
+  document.querySelectorAll('#admin-nav button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  ['members','matches','standings','settings'].forEach(t=>$('#admin-'+t).classList.toggle('hidden',t!==name));
+  if(name==='members') renderMembers();
+  if(name==='matches') renderAdminMatches();
+  if(name==='standings') renderStandings('#standings-admin',null);
+}
+let adminCurrentTab='members';
+async function adminTabRefresh(){ renderMembers(); }
+
+async function renderAdminStats(){
+  const users=await store.get(K.users)||[], matches=await store.get(K.matches)||[];
+  const fin=matches.filter(m=>m.status==='finished').length;
+  let totalPred=0;
+  for(const u of users){ const p=await store.get(K.pred(u.id))||{}; totalPred+=Object.keys(p).length; }
+  $('#admin-stats').innerHTML = `
+    ${stat(users.length,'عضو')}
+    ${stat(matches.length,'مباراة')}
+    ${stat(fin,'انتهت')}
+    ${stat(totalPred,'توقّع')}`;
+}
+function stat(n,l){ return `<div class="stat"><div class="n">${n}</div><div class="l">${l}</div></div>`; }
+
+async function addUser(){
+  const name=$('#nu-name').value.trim();
+  if(!name){ toast('أدخل اسم العضو'); return; }
+  let id=$('#nu-id').value.trim(), pass=$('#nu-pass').value.trim();
+  const users = await store.get(K.users) || [];
+  if(!id){ do{ id=genId(); }while(users.some(u=>u.id===id)); }
+  else if(users.some(u=>u.id===id)){ toast('رقم العضوية مستخدم بالفعل'); return; }
+  if(!pass) pass=genPass();
+  users.push({uid:uid(),name,id,pass});
+  await store.set(K.users,users);
+  $('#nu-name').value='';$('#nu-id').value='';$('#nu-pass').value='';
+  $('#newcred').innerHTML = `<div class="credbox">
+    <div style="font-size:13px;color:var(--pitch);margin-bottom:9px;font-weight:700">✓ تم إنشاء العضو — شارك هذه البيانات معه</div>
+    <div class="row"><span><span style="color:var(--muted);font-family:'Tajawal';font-size:12px">الاسم: </span>${esc(name)}</span></div>
+    <div class="row" style="margin-top:6px"><span><span style="color:var(--muted);font-family:'Tajawal';font-size:12px">رقم العضوية: </span>${id}</span><button class="btn tiny ghost" onclick="copyTxt('${id}')">نسخ</button></div>
+    <div class="row" style="margin-top:6px"><span><span style="color:var(--muted);font-family:'Tajawal';font-size:12px">كلمة المرور: </span>${esc(pass)}</span><button class="btn tiny ghost" onclick="copyTxt('${esc(pass)}')">نسخ</button></div>
+  </div>`;
+  renderMembers(); renderAdminStats();
+}
+function copyTxt(t){ navigator.clipboard?.writeText(t).then(()=>toast('تم النسخ'),()=>{}); }
+
+async function renderMembers(){
+  const users = await store.get(K.users) || [];
+  $('#members-count').textContent = users.length+' عضو';
+  const el=$('#members-list');
+  if(!users.length){ el.innerHTML='<div class="empty"><div class="ic">👥</div>لا يوجد أعضاء بعد. أضف أول عضو من الأعلى.</div>'; return; }
+  // points map
+  const matches=await store.get(K.matches)||[];
+  const rows=[];
+  for(const u of users){
+    const preds=await store.get(K.pred(u.id))||{};
+    let pts=0; for(const m of matches){ const s=scoreFor(preds[m.id],m); if(s) pts+=s; }
+    rows.push(`<div class="row-item">
+      <div>
+        <div class="cred" style="font-size:15px">${esc(u.name)}</div>
+        <div class="mini">رقم: <b style="color:var(--cream)">${u.id}</b> · كلمة المرور: <span class="pw" data-id="${u.uid}">••••••</span>
+          <button class="btn tiny ghost" style="margin-right:6px" onclick="togglePw('${u.uid}','${esc(u.pass)}',this)">إظهار</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:7px;align-items:center">
+        <span class="points-pill" style="font-size:13px;padding:5px 11px">⭐ ${pts}</span>
+        <button class="btn tiny danger" onclick="delUser('${u.uid}')">حذف</button>
+      </div>
+    </div>`);
+  }
+  el.innerHTML=rows.join('');
+}
+function togglePw(uid,pass,btn){
+  const span=document.querySelector('.pw[data-id="'+uid+'"]');
+  if(span.textContent==='••••••'){ span.textContent=pass; btn.textContent='إخفاء'; }
+  else { span.textContent='••••••'; btn.textContent='إظهار'; }
+}
+async function delUser(uid){
+  if(!confirm('حذف هذا العضو وكل توقعاته؟')) return;
+  let users=await store.get(K.users)||[];
+  const u=users.find(x=>x.uid===uid);
+  users=users.filter(x=>x.uid!==uid);
+  await store.set(K.users,users);
+  if(u) await store.del(K.pred(u.id));
+  toast('تم حذف العضو'); renderMembers(); renderAdminStats();
+}
+
+async function addMatch(){
+  const t1=$('#nm-t1').value.trim(), t2=$('#nm-t2').value.trim(), time=$('#nm-time').value;
+  if(!t1||!t2){ toast('أدخل اسمي الفريقين'); return; }
+  if(!time){ toast('حدّد موعد المباراة'); return; }
+  const matches=await store.get(K.matches)||[];
+  matches.push({id:uid(),t1,t2,f1:flagFor(t1),f2:flagFor(t2),kickoff:time,status:'scheduled',r1:null,r2:null});
+  await store.set(K.matches,matches);
+  $('#nm-t1').value='';$('#nm-t2').value='';$('#nm-time').value='';
+  toast('تمت إضافة المباراة'); renderAdminMatches(); renderAdminStats();
+}
+async function loadSchedule(){
+  const matches=await store.get(K.matches)||[];
+  let added=0;
+  for(const s of SCHEDULE){
+    if(matches.some(m=>m.t1===s.t1 && m.t2===s.t2 && m.kickoff===s.k)) continue;
+    matches.push({id:uid(),t1:s.t1,t2:s.t2,f1:s.f1,f2:s.f2,kickoff:s.k,status:'scheduled',r1:null,r2:null});
+    added++;
+  }
+  await store.set(K.matches,matches);
+  toast(added ? ('تمت إضافة '+added+' مباراة للجدول') : 'الجدول محمّل بالكامل مسبقاً');
+  renderAdminMatches(); renderAdminStats();
+}
+async function renderAdminMatches(){
+  const matches = await sortedMatches();
+  $('#matches-count').textContent = matches.length+' مباراة';
+  const el=$('#matches-admin-list');
+  if(!matches.length){ el.innerHTML='<div class="empty"><div class="ic">⚽</div>لا توجد مباريات بعد. أضف أول مباراة من الأعلى.</div>'; return; }
+  el.innerHTML = matches.map(m=>{
+    const locked=isLocked(m), done=m.status==='finished';
+    const badge = done?'<span class="badge done">انتهت</span>':(locked?'<span class="badge locked">التوقّع مغلق</span>':'<span class="badge open">التوقّع مفتوح</span>');
+    return `<div class="match">
+      <div class="meta"><span class="kickoff">🗓️ ${esc(fmtFull(m.kickoff))}</span>${badge}</div>
+      <div class="deadline${isLocked(m)?' passed':''}">⏳ إغلاق التوقّع: <b>${esc(fmtFull(lockTime(m)))}</b></div>
+      <div class="board">
+        <div class="team"><div class="flag">${m.f1}</div><div class="nm">${esc(m.t1)}</div></div>
+        <div class="score-mid">
+          <input id="r1_${m.id}" type="number" min="0" value="${m.r1??''}" placeholder="-">
+          <span class="colon">:</span>
+          <input id="r2_${m.id}" type="number" min="0" value="${m.r2??''}" placeholder="-">
+        </div>
+        <div class="team"><div class="flag">${m.f2}</div><div class="nm">${esc(m.t2)}</div></div>
+      </div>
+      <div class="foot">
+        <div style="display:flex;gap:7px">
+          <button class="btn tiny gold" onclick="saveResult('${m.id}')">${done?'تحديث النتيجة':'اعتماد النتيجة'}</button>
+          ${done?`<button class="btn tiny ghost" onclick="reopenMatch('${m.id}')">إلغاء الاعتماد</button>`:''}
+        </div>
+        <button class="btn tiny danger" onclick="delMatch('${m.id}')">حذف</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+async function saveResult(id){
+  const r1=parseInt($('#r1_'+id).value,10), r2=parseInt($('#r2_'+id).value,10);
+  if(Number.isNaN(r1)||Number.isNaN(r2)){ toast('أدخل نتيجة الفريقين'); return; }
+  const matches=await store.get(K.matches)||[];
+  const m=matches.find(x=>x.id===id);
+  m.r1=r1;m.r2=r2;m.status='finished';
+  await store.set(K.matches,matches);
+  toast('تم اعتماد النتيجة واحتساب النقاط'); renderAdminMatches(); renderAdminStats(); renderMembers();
+}
+async function reopenMatch(id){
+  const matches=await store.get(K.matches)||[];
+  const m=matches.find(x=>x.id===id); m.status='scheduled';m.r1=null;m.r2=null;
+  await store.set(K.matches,matches);
+  toast('تم إلغاء اعتماد النتيجة'); renderAdminMatches(); renderAdminStats();
+}
+async function delMatch(id){
+  if(!confirm('حذف هذه المباراة؟')) return;
+  let matches=await store.get(K.matches)||[];
+  matches=matches.filter(x=>x.id!==id);
+  await store.set(K.matches,matches);
+  // remove predictions for it
+  const users=await store.get(K.users)||[];
+  for(const u of users){ const p=await store.get(K.pred(u.id))||{}; if(p[id]){ delete p[id]; await store.set(K.pred(u.id),p); } }
+  toast('تم حذف المباراة'); renderAdminMatches(); renderAdminStats();
+}
+
+async function changeAdminPass(){
+  const p=$('#new-admin-pass').value;
+  if(p.length<4){ toast('كلمة المرور قصيرة جداً'); return; }
+  await store.set(K.admin,{pass:p});
+  $('#new-admin-pass').value=''; toast('تم تغيير كلمة المرور');
+}
+async function resetAll(){
+  if(!confirm('سيتم حذف كل الأعضاء والمباريات والتوقعات نهائياً. متابعة؟')) return;
+  const users=await store.get(K.users)||[];
+  for(const u of users) await store.del(K.pred(u.id));
+  await store.set(K.users,[]); await store.set(K.matches,[]);
+  toast('تمت إعادة الضبط'); renderAdminStats(); renderMembers(); renderAdminMatches();
+}
+
+/* ================= STANDINGS ================= */
+async function computeStandings(){
+  const users=await store.get(K.users)||[], matches=await store.get(K.matches)||[];
+  const rows=[];
+  for(const u of users){
+    const preds=await store.get(K.pred(u.id))||{};
+    let pts=0,exact=0,outcome=0,wrong=0,made=0;
+    for(const m of matches){
+      const p=preds[m.id]; if(p) made++;
+      const s=scoreFor(p,m);
+      if(s===3){pts+=3;exact++;} else if(s===1){pts+=1;outcome++;} else if(s===0){wrong++;}
+    }
+    rows.push({...u,pts,exact,outcome,wrong,made});
+  }
+  rows.sort((a,b)=> b.pts-a.pts || b.exact-a.exact || b.outcome-a.outcome || a.name.localeCompare(b.name,'ar'));
+  return rows;
+}
+async function renderStandings(target,meId){
+  const rows=await computeStandings();
+  const el=$(target);
+  if(!rows.length){ el.innerHTML='<div class="empty"><div class="ic">📊</div>لا يوجد أعضاء لعرض ترتيبهم بعد.</div>'; return; }
+  el.innerHTML = `<div class="tablewrap"><table>
+    <thead><tr><th>#</th><th>العضو</th><th>النقاط</th><th>مطابق</th><th>فائز</th><th>خاطئ</th><th>توقّعات</th></tr></thead>
+    <tbody>${rows.map((r,i)=>{
+      const rk=i+1; const rc=rk<=3?'r'+rk:'';
+      return `<tr class="${meId&&r.id===meId?'me':''}">
+        <td class="rank ${rc}">${rk===1?'🥇':rk===2?'🥈':rk===3?'🥉':rk}</td>
+        <td><b>${esc(r.name)}</b>${meId&&r.id===meId?' <span class="mini">(أنت)</span>':''}</td>
+        <td><b style="color:var(--gold);font-family:Reem Kufi">${r.pts}</b></td>
+        <td>${r.exact}</td><td>${r.outcome}</td><td>${r.wrong}</td><td>${r.made}</td>
+      </tr>`;
+    }).join('')}</tbody></table></div>`;
+}
+
+/* ================= USER ================= */
+async function openUser(){
+  show('view-user');
+  $('#u-name').textContent = CUR.user.name;
+  await renderUserAll();
+  // tick countdowns / lock state every 30s while on matches tab
+  clearInterval(window._tick);
+  window._tick=setInterval(()=>{ if(CUR&&CUR.role==='user' && !$('#user-matches').classList.contains('hidden')) renderUserMatches(); }, 30000);
+}
+async function renderUserAll(){
+  await renderUserStats();
+  await renderUserMatches();
+}
+function userTab(name,btn){
+  document.querySelectorAll('#user-nav button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  $('#user-matches').classList.toggle('hidden',name!=='matches');
+  $('#user-mine').classList.toggle('hidden',name!=='mine');
+  $('#user-board').classList.toggle('hidden',name!=='board');
+  if(name==='matches') renderUserMatches();
+  if(name==='mine') renderUserMine();
+  if(name==='board') renderStandings('#board-user',CUR.user.id);
+}
+async function renderUserStats(){
+  const matches=await store.get(K.matches)||[];
+  const preds=await store.get(K.pred(CUR.user.id))||{};
+  let pts=0,exact=0,made=0;
+  for(const m of matches){ const p=preds[m.id]; if(p)made++; const s=scoreFor(p,m); if(s===3){pts+=3;exact++;} else if(s===1)pts+=1; }
+  const rows=await computeStandings();
+  const rank=rows.findIndex(r=>r.id===CUR.user.id)+1;
+  $('#u-points').innerHTML='⭐ '+pts;
+  $('#user-stats').innerHTML = `
+    ${stat(pts,'نقطة')}
+    ${stat(rank?('#'+rank):'—','ترتيبك')}
+    ${stat(made,'توقّعاتك')}
+    ${stat(exact,'مطابقة')}`;
+}
+async function renderUserMatches(){
+  const matches=await sortedMatches();
+  const preds=await store.get(K.pred(CUR.user.id))||{};
+  const el=$('#user-matches');
+  if(!matches.length){ el.innerHTML='<div class="empty"><div class="ic">⚽</div>لم تُضَف مباريات بعد. عُد لاحقاً.</div>'; return; }
+  // upcoming/open first, then locked-not-finished, then finished
+  el.innerHTML = matches.map(m=>{
+    const p=preds[m.id], locked=isLocked(m), done=m.status==='finished';
+    let badge, body, foot='';
+    if(done){
+      const s=scoreFor(p,m);
+      badge='<span class="badge done">انتهت</span>';
+      body=`<div class="board">
+        <div class="team"><div class="flag">${m.f1}</div><div class="nm">${esc(m.t1)}</div></div>
+        <div class="score-final">${m.r1}<span class="colon">:</span>${m.r2}</div>
+        <div class="team"><div class="flag">${m.f2}</div><div class="nm">${esc(m.t2)}</div></div>
+      </div>`;
+      foot=`<div class="foot"><div class="your-pred">توقّعك: ${p?`<b>${p.a} : ${p.b}</b>`:'<b>—</b>'}</div>${ptsTag(s)}</div>`;
+    } else if(locked){
+      badge='<span class="badge locked">التوقّع مغلق</span>';
+      body=boardWithPred(m,p,true);
+      foot=`<div class="foot"><div class="your-pred">${p?`توقّعك: <b>${p.a} : ${p.b}</b>`:'لم تتوقّع هذه المباراة'}</div></div>`;
+    } else {
+      const cd=countdownText(m);
+      badge=`<span class="badge open">${cd||'التوقّع مفتوح'}</span>`;
+      body=boardWithPred(m,p,false);
+      foot=`<div class="foot">
+        <div class="your-pred">${p?`توقّعك الحالي: <b>${p.a} : ${p.b}</b>`:'أدخل توقّعك للنتيجة'}</div>
+        <button class="btn tiny gold" onclick="savePred('${m.id}')">${p?'تعديل التوقّع':'حفظ التوقّع'}</button>
+      </div>`;
+    }
+    return `<div class="match"><div class="meta"><span class="kickoff">🗓️ ${esc(fmtFull(m.kickoff))}</span>${badge}</div>
+      <div class="deadline${isLocked(m)?' passed':''}">⏳ ${done?'انتهت المباراة':(isLocked(m)?'انتهت مهلة التوقّع':'آخر موعد للتوقّع:')} ${done?'':`<b>${esc(fmtFull(lockTime(m)))}</b>`}</div>
+      ${body}${foot}</div>`;
+  }).join('');
+}
+function boardWithPred(m,p,locked){
+  const a = p?p.a:'', b = p?p.b:'';
+  const dis = locked?'disabled':'';
+  return `<div class="board">
+    <div class="team"><div class="flag">${m.f1}</div><div class="nm">${esc(m.t1)}</div></div>
+    <div class="score-mid">
+      <input id="p1_${m.id}" type="number" min="0" value="${a}" placeholder="-" ${dis}>
+      <span class="colon">:</span>
+      <input id="p2_${m.id}" type="number" min="0" value="${b}" placeholder="-" ${dis}>
+    </div>
+    <div class="team"><div class="flag">${m.f2}</div><div class="nm">${esc(m.t2)}</div></div>
+  </div>`;
+}
+async function savePred(id){
+  const matches=await store.get(K.matches)||[];
+  const m=matches.find(x=>x.id===id);
+  if(isLocked(m)){ toast('انتهى وقت التوقّع لهذه المباراة'); renderUserMatches(); return; }
+  const a=parseInt($('#p1_'+id).value,10), b=parseInt($('#p2_'+id).value,10);
+  if(Number.isNaN(a)||Number.isNaN(b)||a<0||b<0){ toast('أدخل نتيجة صحيحة للفريقين'); return; }
+  const preds=await store.get(K.pred(CUR.user.id))||{};
+  preds[id]={a,b,ts:Date.now()};
+  await store.set(K.pred(CUR.user.id),preds);
+  toast('تم حفظ توقّعك ✓'); renderUserMatches(); renderUserStats();
+}
+async function renderUserMine(){
+  const matches=await sortedMatches();
+  const preds=await store.get(K.pred(CUR.user.id))||{};
+  const mine=matches.filter(m=>preds[m.id]);
+  const el=$('#user-mine');
+  if(!mine.length){ el.innerHTML='<div class="empty"><div class="ic">📝</div>لم تسجّل أي توقّع بعد. اذهب إلى المباريات وابدأ التوقّع.</div>'; return; }
+  el.innerHTML = mine.map(m=>{
+    const p=preds[m.id], done=m.status==='finished', s=scoreFor(p,m);
+    const res = done?`النتيجة <b>${m.r1} : ${m.r2}</b>`:(isLocked(m)?'بانتظار المباراة':'لم تبدأ بعد');
+    return `<div class="row-item">
+      <div>
+        <div class="cred" style="font-size:14.5px">${m.f1} ${esc(m.t1)} <span style="color:var(--muted)">×</span> ${esc(m.t2)} ${m.f2}</div>
+        <div class="mini">توقّعك: <b style="color:var(--cream)">${p.a} : ${p.b}</b> · ${res}</div>
+      </div>
+      ${done?ptsTag(s):'<span class="pts-tag p0">قيد الانتظار</span>'}
+    </div>`;
+  }).join('');
+}
+</script>
+</body>
+</html>
