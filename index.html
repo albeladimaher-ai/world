@@ -173,27 +173,6 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:24px 0}
 </head>
 <body>
 
-<!-- ============ SETUP (first run) ============ -->
-<div id="view-setup" class="center-screen hidden">
-  <div class="card login-card">
-    <div class="login-head">
-      <div class="logo brand-logo">🏆</div>
-      <h1>تهيئة المنصة</h1>
-      <p>أنشئ كلمة مرور المشرف للبدء. ستحتاجها لإدارة الأعضاء والمباريات.</p>
-    </div>
-    <div class="field">
-      <label>كلمة مرور المشرف</label>
-      <input id="setup-pass" type="password" placeholder="اختر كلمة مرور قوية">
-    </div>
-    <div class="field">
-      <label>تأكيد كلمة المرور</label>
-      <input id="setup-pass2" type="password" placeholder="أعد كتابة كلمة المرور">
-    </div>
-    <button class="btn gold" onclick="doSetup()">إنشاء حساب المشرف</button>
-    <div id="setup-msg"></div>
-  </div>
-</div>
-
 <!-- ============ LOGIN ============ -->
 <div id="view-login" class="center-screen hidden">
   <div class="card login-card">
@@ -222,7 +201,11 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:24px 0}
 
     <div id="login-admin" class="hidden">
       <div class="field">
-        <label>كلمة مرور المشرف</label>
+        <label>اسم المستخدم</label>
+        <input id="a-user" placeholder="اسم مستخدم المشرف">
+      </div>
+      <div class="field">
+        <label>كلمة المرور</label>
         <input id="a-pass" type="password" placeholder="••••••••">
       </div>
       <button class="btn gold" onclick="adminLogin()">دخول المشرف</button>
@@ -304,9 +287,18 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:24px 0}
     <!-- settings -->
     <div id="admin-settings" class="hidden">
       <div class="card" style="padding:16px">
-        <div class="section-h" style="margin-top:0"><h3>تغيير كلمة مرور المشرف</h3></div>
-        <div class="field"><label>كلمة المرور الجديدة</label><input id="new-admin-pass" type="password" placeholder="••••••••"></div>
-        <button class="btn gold sm" onclick="changeAdminPass()">حفظ</button>
+        <div class="section-h" style="margin-top:0"><h3>بيانات دخول المشرف</h3></div>
+        <div class="row-item" style="margin-bottom:0">
+          <div>
+            <div class="mini">اسم المستخدم</div>
+            <div class="cred" style="font-size:16px">123</div>
+          </div>
+          <div style="text-align:left">
+            <div class="mini">كلمة المرور</div>
+            <div class="cred" style="font-size:16px">Mah103090</div>
+          </div>
+        </div>
+        <div class="note">هذه بيانات دخول المشرف الثابتة. استخدمها في تبويب «مشرف» بشاشة الدخول.</div>
       </div>
       <hr class="sep">
       <div class="card" style="padding:16px;border-color:#5a2420">
@@ -518,7 +510,7 @@ const $ = s=>document.querySelector(s);
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 function genId(){ return String(1000+Math.floor(Math.random()*9000)); }
 function genPass(){ const c='abcdefghjkmnpqrstuvwxyz23456789'; let p=''; for(let i=0;i<6;i++)p+=c[Math.floor(Math.random()*c.length)]; return p; }
-function show(id){ ['view-setup','view-login','view-admin','view-user'].forEach(v=>$('#'+v).classList.toggle('hidden',v!==id)); }
+function show(id){ ['view-login','view-admin','view-user'].forEach(v=>$('#'+v).classList.toggle('hidden',v!==id)); }
 function esc(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),1900); }
 function fmtDate(iso){
@@ -562,25 +554,13 @@ async function sortedMatches(){
 
 /* ================= AUTH STATE ================= */
 let CUR = null; // {role:'admin'} or {role:'user', user:{...}}
+const ADMIN_USER = '123';
+const ADMIN_PASS = 'Mah103090';
 
 /* ================= INIT ================= */
 (async function init(){
-  const admin = await store.get(K.admin);
-  if(!admin){ show('view-setup'); }
-  else { show('view-login'); }
+  show('view-login'); switchLogin('user');
 })();
-
-async function doSetup(){
-  const p=$('#setup-pass').value, p2=$('#setup-pass2').value;
-  const msg=$('#setup-msg');
-  if(p.length<4){ msg.innerHTML='<div class="msg err">كلمة المرور قصيرة جداً (4 أحرف على الأقل).</div>'; return; }
-  if(p!==p2){ msg.innerHTML='<div class="msg err">كلمتا المرور غير متطابقتين.</div>'; return; }
-  await store.set(K.admin,{pass:p});
-  if(!(await store.get(K.users))) await store.set(K.users,[]);
-  if(!(await store.get(K.matches))) await store.set(K.matches,[]);
-  toast('تم إنشاء حساب المشرف');
-  show('view-login'); switchLogin('admin');
-}
 
 /* ================= LOGIN ================= */
 function switchLogin(which){
@@ -591,9 +571,9 @@ function switchLogin(which){
   $('#login-msg').innerHTML='';
 }
 async function adminLogin(){
-  const admin = await store.get(K.admin);
-  if($('#a-pass').value === admin.pass){ CUR={role:'admin'}; $('#a-pass').value=''; openAdmin(); }
-  else $('#login-msg').innerHTML='<div class="msg err">كلمة مرور المشرف غير صحيحة.</div>';
+  const user=$('#a-user').value.trim(), pass=$('#a-pass').value;
+  if(user===ADMIN_USER && pass===ADMIN_PASS){ CUR={role:'admin'}; $('#a-user').value='';$('#a-pass').value=''; openAdmin(); }
+  else $('#login-msg').innerHTML='<div class="msg err">اسم المستخدم أو كلمة المرور غير صحيحة.</div>';
 }
 async function userLogin(){
   const id=$('#u-id').value.trim(), pass=$('#u-pass').value;
@@ -782,12 +762,6 @@ async function delMatch(id){
   toast('تم حذف المباراة'); renderAdminMatches(); renderAdminStats();
 }
 
-async function changeAdminPass(){
-  const p=$('#new-admin-pass').value;
-  if(p.length<4){ toast('كلمة المرور قصيرة جداً'); return; }
-  await store.set(K.admin,{pass:p});
-  $('#new-admin-pass').value=''; toast('تم تغيير كلمة المرور');
-}
 async function resetAll(){
   if(!confirm('سيتم حذف كل الأعضاء والمباريات والتوقعات نهائياً. متابعة؟')) return;
   const users=await store.get(K.users)||[];
