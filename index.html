@@ -289,17 +289,19 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:24px 0}
     <div id="admin-settings" class="hidden">
       <div class="card" style="padding:16px">
         <div class="section-h" style="margin-top:0"><h3>بيانات دخول المشرف</h3></div>
-        <div class="row-item" style="margin-bottom:0">
-          <div>
-            <div class="mini">اسم المستخدم</div>
-            <div class="cred" style="font-size:16px">123</div>
-          </div>
-          <div style="text-align:left">
-            <div class="mini">كلمة المرور</div>
-            <div class="cred" style="font-size:16px">Mah103090</div>
-          </div>
+        <div class="inline-form">
+          <div><label>اسم المستخدم</label><input id="adm-user" placeholder="اسم المستخدم"></div>
+          <div><label>كلمة المرور</label><input id="adm-pass" placeholder="كلمة المرور"></div>
         </div>
-        <div class="note">هذه بيانات دخول المشرف الثابتة. استخدمها في تبويب «مشرف» بشاشة الدخول.</div>
+        <button class="btn gold sm" style="margin-top:10px" onclick="saveAdmin()">حفظ بيانات الدخول</button>
+        <div class="note">احفظ بياناتك جيداً — ستحتاجها للدخول في المرة القادمة من أي جهاز.</div>
+      </div>
+      <hr class="sep">
+      <div class="card" style="padding:16px">
+        <div class="section-h" style="margin-top:0"><h3>حالة قاعدة البيانات (Supabase)</h3></div>
+        <p class="mini" style="margin:0 0 12px">اضغط للتأكد من أنّ الحفظ والقراءة من السحابة يعملان بشكل صحيح.</p>
+        <button class="btn ghost sm" onclick="testDB()">اختبار الاتصال بقاعدة البيانات</button>
+        <div id="db-status"></div>
       </div>
       <hr class="sep">
       <div class="card" style="padding:16px;border-color:#5a2420">
@@ -360,7 +362,7 @@ try {
 } catch(e){ console.error('Supabase init failed:', e); }
 
 const K = {
-  users:'wc26_users', matches:'wc26_matches',
+  admin:'wc26_admin', users:'wc26_users', matches:'wc26_matches',
   pred:(id)=>'wc26_pred_'+id
 };
 const store = {
@@ -570,8 +572,8 @@ async function sortedMatches(){
 
 /* ================= AUTH STATE ================= */
 let CUR = null; // {role:'admin'} or {role:'user', user:{...}}
-const ADMIN_USER = '123';
-const ADMIN_PASS = 'Mah103090';
+const ADMIN_DEFAULT = {user:'123', pass:'Mah103090'};
+async function getAdmin(){ return (await store.get(K.admin)) || ADMIN_DEFAULT; }
 
 /* ================= INIT ================= */
 (async function init(){
@@ -587,8 +589,9 @@ function switchLogin(which){
   $('#login-msg').innerHTML='';
 }
 async function adminLogin(){
+  const a = await getAdmin();
   const user=$('#a-user').value.trim(), pass=$('#a-pass').value;
-  if(user===ADMIN_USER && pass===ADMIN_PASS){ CUR={role:'admin'}; $('#a-user').value='';$('#a-pass').value=''; openAdmin(); }
+  if(user===a.user && pass===a.pass){ CUR={role:'admin'}; $('#a-user').value='';$('#a-pass').value=''; openAdmin(); }
   else $('#login-msg').innerHTML='<div class="msg err">اسم المستخدم أو كلمة المرور غير صحيحة.</div>';
 }
 async function userLogin(){
@@ -614,6 +617,7 @@ function adminTab(name,btn){
   if(name==='members') renderMembers();
   if(name==='matches') renderAdminMatches();
   if(name==='standings') renderStandings('#standings-admin',null);
+  if(name==='settings') fillAdminSettings();
 }
 let adminCurrentTab='members';
 async function adminTabRefresh(){ renderMembers(); }
@@ -778,6 +782,31 @@ async function delMatch(id){
   toast('تم حذف المباراة'); renderAdminMatches(); renderAdminStats();
 }
 
+async function fillAdminSettings(){
+  const a = await getAdmin();
+  $('#adm-user').value = a.user;
+  $('#adm-pass').value = a.pass;
+}
+async function saveAdmin(){
+  const user=$('#adm-user').value.trim(), pass=$('#adm-pass').value.trim();
+  if(!user || !pass){ toast('أدخل اسم المستخدم وكلمة المرور'); return; }
+  const ok = await store.set(K.admin, {user, pass});
+  if(ok) toast('تم حفظ بيانات دخول المشرف ✓');
+}
+async function testDB(){
+  const el=$('#db-status');
+  el.innerHTML='<div class="msg" style="background:var(--bg2);color:var(--muted);margin-top:10px">جارٍ الاختبار…</div>';
+  const key='wc26_selftest';
+  const stamp=Date.now();
+  const ok = await store.set(key,{stamp,msg:'ok'});
+  const got = await store.get(key);
+  await store.del(key);
+  if(ok && got && got.stamp===stamp){
+    el.innerHTML='<div class="msg ok" style="margin-top:10px">✓ الاتصال يعمل — البيانات تُحفظ وتُقرأ من Supabase بنجاح.</div>';
+  } else {
+    el.innerHTML='<div class="msg err" style="margin-top:10px">✗ فشل الحفظ في Supabase. تأكد من تنفيذ أوامر إنشاء جدول kv وسياساته، ومن صحّة الرابط والمفتاح.</div>';
+  }
+}
 async function resetAll(){
   if(!confirm('سيتم حذف كل الأعضاء والمباريات والتوقعات نهائياً. متابعة؟')) return;
   const users=await store.get(K.users)||[];
