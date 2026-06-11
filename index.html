@@ -190,7 +190,7 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:24px 0}
 
     <div id="login-user">
       <div class="field">
-        <label>رقم العضوية</label>
+        <label>اسم المستخدم (رقم العضوية)</label>
         <input id="u-id" inputmode="numeric" placeholder="مثال: 1042">
       </div>
       <div class="field">
@@ -233,6 +233,7 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:24px 0}
     <div class="navtabs" id="admin-nav">
       <button class="active" onclick="adminTab('members',this)">الأعضاء</button>
       <button onclick="adminTab('matches',this)">المباريات</button>
+      <button onclick="adminTab('predictions',this)">التوقّعات</button>
       <button onclick="adminTab('standings',this)">الترتيب</button>
       <button onclick="adminTab('settings',this)">الإعدادات</button>
     </div>
@@ -277,6 +278,16 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:24px 0}
       </div>
       <div class="section-h"><h3>المباريات</h3><span class="mini" id="matches-count"></span></div>
       <div id="matches-admin-list"></div>
+    </div>
+
+    <!-- predictions -->
+    <div id="admin-predictions" class="hidden">
+      <div class="card" style="padding:16px;margin-bottom:14px">
+        <div class="section-h" style="margin-top:0"><h3>توقّعات الأعضاء</h3></div>
+        <label>اختر العضو لعرض توقّعاته وتعديلها أو حذفها</label>
+        <select id="pred-user" onchange="renderUserPredictions()"></select>
+      </div>
+      <div id="pred-list"></div>
     </div>
 
     <!-- standings -->
@@ -599,11 +610,12 @@ async function adminLogin(){
   else $('#login-msg').innerHTML='<div class="msg err">اسم المستخدم أو كلمة المرور غير صحيحة.</div>';
 }
 async function userLogin(){
-  const id=$('#u-id').value.trim(), pass=$('#u-pass').value;
+  const id=$('#u-id').value.trim(), pass=$('#u-pass').value.trim();
   const users = await store.get(K.users) || [];
-  const u = users.find(x=>x.id===id && x.pass===pass);
+  if(!users.length){ $('#login-msg').innerHTML='<div class="msg err">لا يوجد أعضاء محفوظون بعد. تأكد من إضافة المشرف لهم ومن اتصال قاعدة البيانات.</div>'; return; }
+  const u = users.find(x=> String(x.id).trim()===id && String(x.pass)===pass);
   if(u){ CUR={role:'user',user:u}; $('#u-id').value='';$('#u-pass').value=''; openUser(); }
-  else $('#login-msg').innerHTML='<div class="msg err">رقم العضوية أو كلمة المرور غير صحيحة.</div>';
+  else $('#login-msg').innerHTML='<div class="msg err">اسم المستخدم أو كلمة المرور غير صحيحة.</div>';
 }
 function logout(){ CUR=null; clearInterval(window._tick); show('view-login'); switchLogin('user'); }
 
@@ -617,9 +629,10 @@ async function openAdmin(){
 function adminTab(name,btn){
   document.querySelectorAll('#admin-nav button').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  ['members','matches','standings','settings'].forEach(t=>$('#admin-'+t).classList.toggle('hidden',t!==name));
+  ['members','matches','predictions','standings','settings'].forEach(t=>$('#admin-'+t).classList.toggle('hidden',t!==name));
   if(name==='members') renderMembers();
   if(name==='matches') renderAdminMatches();
+  if(name==='predictions') renderPredAdmin();
   if(name==='standings') renderStandings('#standings-admin',null);
   if(name==='settings') fillAdminSettings();
 }
@@ -829,6 +842,68 @@ async function resetAll(){
   for(const u of users) await store.del(K.pred(u.id));
   await store.set(K.users,[]); await store.set(K.matches,[]);
   toast('تمت إعادة الضبط'); renderAdminStats(); renderMembers(); renderAdminMatches();
+}
+
+/* ============ ADMIN: USER PREDICTIONS ============ */
+async function renderPredAdmin(){
+  const users = await store.get(K.users)||[];
+  const sel = $('#pred-user');
+  if(!users.length){
+    sel.innerHTML='';
+    $('#pred-list').innerHTML='<div class="empty"><div class="ic">👥</div>لا يوجد أعضاء بعد. أضِف أعضاء أولاً.</div>';
+    return;
+  }
+  const cur = sel.value;
+  sel.innerHTML = users.map(u=>`<option value="${u.id}">${esc(u.name)} — ${u.id}</option>`).join('');
+  if(cur && users.some(u=>u.id===cur)) sel.value=cur;
+  await renderUserPredictions();
+}
+async function renderUserPredictions(){
+  const uid = $('#pred-user').value;
+  if(!uid){ $('#pred-list').innerHTML=''; return; }
+  const matches = await sortedMatches();
+  const preds = await store.get(K.pred(uid)) || {};
+  const entries = matches.filter(m=>preds[m.id]);
+  const el = $('#pred-list');
+  if(!entries.length){ el.innerHTML='<div class="empty"><div class="ic">📭</div>لا توجد توقّعات لهذا العضو بعد.</div>'; return; }
+  el.innerHTML = entries.map(m=>{
+    const p=preds[m.id], done=m.status==='finished', s=scoreFor(p,m);
+    const badge = done?`<span class="badge done">انتهت ${m.r1}:${m.r2}</span>`:'<span class="badge open">لم تنتهِ</span>';
+    return `<div class="match">
+      <div class="meta"><span class="kickoff">🗓️ ${esc(fmtFull(m.kickoff))}</span>${badge}</div>
+      <div class="board">
+        <div class="team"><div class="flag">${m.f1}</div><div class="nm">${esc(m.t1)}</div></div>
+        <div class="score-mid">
+          <input id="ap1_${m.id}" type="number" min="0" value="${p.a}">
+          <span class="colon">:</span>
+          <input id="ap2_${m.id}" type="number" min="0" value="${p.b}">
+        </div>
+        <div class="team"><div class="flag">${m.f2}</div><div class="nm">${esc(m.t2)}</div></div>
+      </div>
+      <div class="foot">
+        <div style="display:flex;gap:7px">
+          <button class="btn tiny gold" onclick="adminSavePred('${uid}','${m.id}')">حفظ التعديل</button>
+          <button class="btn tiny danger" onclick="adminDelPred('${uid}','${m.id}')">حذف</button>
+        </div>
+        ${done?ptsTag(s):'<span class="pts-tag p0">بانتظار النتيجة</span>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+async function adminSavePred(uid,mid){
+  const a=parseInt($('#ap1_'+mid).value,10), b=parseInt($('#ap2_'+mid).value,10);
+  if(Number.isNaN(a)||Number.isNaN(b)||a<0||b<0){ toast('أدخل نتيجة صحيحة للفريقين'); return; }
+  const preds = await store.get(K.pred(uid)) || {};
+  preds[mid] = {a,b,ts:Date.now()};
+  await store.set(K.pred(uid),preds);
+  toast('تم تعديل التوقّع ✓'); renderUserPredictions(); renderAdminStats();
+}
+async function adminDelPred(uid,mid){
+  if(!confirm('حذف توقّع هذا العضو لهذه المباراة؟')) return;
+  const preds = await store.get(K.pred(uid)) || {};
+  delete preds[mid];
+  await store.set(K.pred(uid),preds);
+  toast('تم حذف التوقّع'); renderUserPredictions(); renderAdminStats();
 }
 
 /* ================= STANDINGS ================= */
