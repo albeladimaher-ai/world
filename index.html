@@ -896,15 +896,15 @@ async function renderMatchPredictions(){
   const matches=await store.get(K.matches)||[];
   const m=matches.find(x=>x.id===mid); if(!m){ el.innerHTML=''; return; }
   const users=await store.get(K.users)||[];
-  if(!users.length){ el.innerHTML='<div class="empty" style="margin-top:12px"><div class="ic">👥</div>لا يوجد أعضاء.</div>'; return; }
-  const done=m.status==='finished';
   const rows=[];
   for(const u of users){
     const preds=await store.get(K.pred(u.id))||{};
-    const p=preds[mid]; const s=scoreFor(p,m);
-    rows.push(`<tr><td>${esc(u.name)}</td><td>${u.id}</td><td class="pitch">${p?`${p.a} : ${p.b}`:'<span class="mini">لم يتوقّع</span>'}</td>${done?`<td>${p?ptsTag(s):''}</td>`:''}</tr>`);
+    const p=preds[mid];
+    if(!p) continue;
+    rows.push(`<tr><td>${esc(u.name)}</td><td class="pitch" style="color:var(--pitch);font-weight:700">${p.a} : ${p.b}</td><td class="mini">${p.ts?esc(fmtFull(p.ts)):'—'}</td></tr>`);
   }
-  el.innerHTML=`<div class="tablewrap" style="margin-top:12px"><table><thead><tr><th>العضو</th><th>اسم المستخدم</th><th>التوقّع</th>${done?'<th>النقاط</th>':''}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
+  if(!rows.length){ el.innerHTML='<div class="empty" style="margin-top:12px"><div class="ic">📭</div>لا توجد توقّعات لهذه المباراة بعد.</div>'; return; }
+  el.innerHTML=`<div class="tablewrap" style="margin-top:12px"><table><thead><tr><th>العضو</th><th>التوقّع</th><th>تاريخ إضافة التوقّع</th></tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
 }
 async function renderUserPredictions(){
   const uid = $('#pred-user').value;
@@ -999,19 +999,17 @@ async function printMatchPredictions(){
   const matches=await store.get(K.matches)||[];
   const m=matches.find(x=>x.id===mid); if(!m){ toast('المباراة غير موجودة'); return; }
   const users=await store.get(K.users)||[];
-  if(!users.length){ toast('لا يوجد أعضاء'); return; }
-  const done=m.status==='finished';
   const rows=[];
   for(const u of users){
     const preds=await store.get(K.pred(u.id))||{};
-    const p=preds[mid]; const s=scoreFor(p,m);
-    let pts='';
-    if(done) pts=`<td class="gold">${p?(s>0?'+'+s:s):'—'}</td>`;
-    rows.push(`<tr><td>${esc(u.name)}</td><td>${u.id}</td><td class="pitch">${p?`${p.a} : ${p.b}`:'—'}</td>${pts}</tr>`);
+    const p=preds[mid];
+    if(!p) continue;
+    rows.push(`<tr><td>${esc(u.name)}</td><td class="pitch">${p.a} : ${p.b}</td><td>${p.ts?esc(fmtFull(p.ts)):'—'}</td></tr>`);
   }
-  const head=`<div class="card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span class="flag">${m.f1}</span> <b>${esc(m.t1)}</b> <span style="color:#86a394">×</span> <b>${esc(m.t2)}</b> <span class="flag">${m.f2}</span></div>
-    <div class="sub" style="margin:0">${esc(fmtFull(m.kickoff))}${done?` — النتيجة النهائية: ${m.r1} : ${m.r2}`:' — لم تنتهِ بعد'}</div></div>`;
-  const table=`<table><thead><tr><th>العضو</th><th>اسم المستخدم</th><th>التوقّع</th>${done?'<th>النقاط</th>':''}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
+  if(!rows.length){ toast('لا توجد توقّعات لهذه المباراة'); return; }
+  const head=`<div class="card"><div style="display:flex;align-items:center;gap:8px"><span class="flag">${m.f1}</span> <b>${esc(m.t1)}</b> <span style="color:#86a394">×</span> <b>${esc(m.t2)}</b> <span class="flag">${m.f2}</span></div>
+    <div class="sub" style="margin:6px 0 0">${esc(fmtFull(m.kickoff))}</div></div>`;
+  const table=`<table><thead><tr><th>العضو</th><th>التوقّع</th><th>تاريخ إضافة التوقّع</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
   openPrint('توقّعات مباراة', head+table);
 }
 
