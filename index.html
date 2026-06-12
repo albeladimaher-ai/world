@@ -283,7 +283,14 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:24px 0}
     <!-- predictions -->
     <div id="admin-predictions" class="hidden">
       <div class="card" style="padding:16px;margin-bottom:14px">
-        <div class="section-h" style="margin-top:0"><h3>توقّعات الأعضاء</h3></div>
+        <div class="section-h" style="margin-top:0"><h3>توقّعات مباراة معيّنة</h3></div>
+        <label>اختر المباراة لعرض توقّعات كل الأعضاء وطباعتها</label>
+        <select id="predm-match" onchange="renderMatchPredictions()"></select>
+        <button class="btn gold sm" style="margin-top:10px" onclick="printMatchPredictions()">🖨️ طباعة توقّعات هذه المباراة (PDF)</button>
+        <div id="predm-list"></div>
+      </div>
+      <div class="card" style="padding:16px;margin-bottom:14px">
+        <div class="section-h" style="margin-top:0"><h3>تعديل / حذف توقّعات عضو</h3></div>
         <label>اختر العضو لعرض توقّعاته وتعديلها أو حذفها</label>
         <select id="pred-user" onchange="renderUserPredictions()"></select>
       </div>
@@ -292,6 +299,9 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:24px 0}
 
     <!-- standings -->
     <div id="admin-standings" class="hidden">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+        <button class="btn gold sm" onclick="printStandings()">🖨️ طباعة الترتيب (PDF)</button>
+      </div>
       <div class="legend">
         <span><b>+3</b> توقّع مطابق</span>
         <span><b>+1</b> فائز صحيح بنتيجة مختلفة</span>
@@ -306,10 +316,10 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:24px 0}
         <div class="section-h" style="margin-top:0"><h3>بيانات دخول المشرف</h3></div>
         <div class="inline-form">
           <div><label>اسم المستخدم</label><input id="adm-user" placeholder="اسم المستخدم"></div>
-          <div><label>كلمة المرور</label><input id="adm-pass" placeholder="كلمة المرور"></div>
+          <div><label>كلمة مرور جديدة</label><input id="adm-pass" type="password" placeholder="اتركها فارغة للإبقاء على الحالية"></div>
         </div>
         <button class="btn gold sm" style="margin-top:10px" onclick="saveAdmin()">حفظ بيانات الدخول</button>
-        <div class="note">احفظ بياناتك جيداً — ستحتاجها للدخول في المرة القادمة من أي جهاز.</div>
+        <div class="note">كلمة المرور تُحفظ مشفّرة (بصمة SHA‑256) ولا تظهر كنص صريح. احفظها جيداً لأنها لا تُسترجع — إن نسيتها يمكنك تعيين كلمة جديدة من هنا.</div>
       </div>
       <hr class="sep">
       <div class="card" style="padding:16px">
@@ -353,6 +363,9 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:24px 0}
     <div id="user-matches"></div>
     <div id="user-mine" class="hidden"></div>
     <div id="user-board" class="hidden">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+        <button class="btn gold sm" onclick="printStandings()">🖨️ طباعة الترتيب (PDF)</button>
+      </div>
       <div class="legend">
         <span><b>+3</b> توقّع مطابق</span>
         <span><b>+1</b> فائز صحيح بنتيجة مختلفة</span>
@@ -587,7 +600,11 @@ async function sortedMatches(){
 
 /* ================= AUTH STATE ================= */
 let CUR = null; // {role:'admin'} or {role:'user', user:{...}}
-const ADMIN_DEFAULT = {user:'123', pass:'Mah103090'};
+const ADMIN_DEFAULT = {user:'123', hash:'f9af41dd76789830fed9ce4ecb7a0650dbb3f206bff1a9cbc37fdcbe75d4aa9e'};
+async function sha256(s){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
 async function getAdmin(){ return (await store.get(K.admin)) || ADMIN_DEFAULT; }
 
 /* ================= INIT ================= */
@@ -606,7 +623,12 @@ function switchLogin(which){
 async function adminLogin(){
   const a = await getAdmin();
   const user=$('#a-user').value.trim(), pass=$('#a-pass').value;
-  if(user===a.user && pass===a.pass){ CUR={role:'admin'}; $('#a-user').value='';$('#a-pass').value=''; openAdmin(); }
+  const passHash = await sha256(pass);
+  const ok = (user===a.user) && ( a.hash ? passHash===a.hash : pass===a.pass );
+  if(ok){
+    if(!a.hash){ await store.set(K.admin,{user:a.user, hash:passHash}); } // ترقية أي كلمة مرور قديمة مكشوفة إلى بصمة
+    CUR={role:'admin'}; $('#a-user').value='';$('#a-pass').value=''; openAdmin();
+  }
   else $('#login-msg').innerHTML='<div class="msg err">اسم المستخدم أو كلمة المرور غير صحيحة.</div>';
 }
 async function userLogin(){
@@ -814,13 +836,19 @@ async function delMatch(id){
 async function fillAdminSettings(){
   const a = await getAdmin();
   $('#adm-user').value = a.user;
-  $('#adm-pass').value = a.pass;
+  $('#adm-pass').value = '';
 }
 async function saveAdmin(){
-  const user=$('#adm-user').value.trim(), pass=$('#adm-pass').value.trim();
-  if(!user || !pass){ toast('أدخل اسم المستخدم وكلمة المرور'); return; }
-  const ok = await store.set(K.admin, {user, pass});
-  if(ok) toast('تم حفظ بيانات دخول المشرف ✓');
+  const user=$('#adm-user').value.trim();
+  const newPass=$('#adm-pass').value.trim();
+  if(!user){ toast('أدخل اسم المستخدم'); return; }
+  const a = await getAdmin();
+  let hash = a.hash;
+  if(newPass){ hash = await sha256(newPass); }
+  else if(!hash && a.pass){ hash = await sha256(a.pass); } // ترقية كلمة مرور قديمة
+  if(!hash){ toast('أدخل كلمة المرور'); return; }
+  const ok = await store.set(K.admin, {user, hash});
+  if(ok){ $('#adm-pass').value=''; toast('تم حفظ بيانات دخول المشرف ✓'); }
 }
 async function testDB(){
   const el=$('#db-status');
@@ -847,16 +875,36 @@ async function resetAll(){
 /* ============ ADMIN: USER PREDICTIONS ============ */
 async function renderPredAdmin(){
   const users = await store.get(K.users)||[];
+  const matches = await sortedMatches();
+  // قائمة المباريات
+  const ms = $('#predm-match');
+  const curM = ms.value;
+  ms.innerHTML = matches.length ? matches.map(m=>`<option value="${m.id}">${esc(m.t1)} × ${esc(m.t2)} — ${esc(fmtFull(m.kickoff))}</option>`).join('') : '<option value="">لا توجد مباريات</option>';
+  if(curM && matches.some(m=>m.id===curM)) ms.value=curM;
+  // قائمة الأعضاء
   const sel = $('#pred-user');
-  if(!users.length){
-    sel.innerHTML='';
-    $('#pred-list').innerHTML='<div class="empty"><div class="ic">👥</div>لا يوجد أعضاء بعد. أضِف أعضاء أولاً.</div>';
-    return;
-  }
-  const cur = sel.value;
-  sel.innerHTML = users.map(u=>`<option value="${u.id}">${esc(u.name)} — ${u.id}</option>`).join('');
-  if(cur && users.some(u=>u.id===cur)) sel.value=cur;
+  const curU = sel.value;
+  sel.innerHTML = users.length ? users.map(u=>`<option value="${u.id}">${esc(u.name)} — ${u.id}</option>`).join('') : '<option value="">لا يوجد أعضاء</option>';
+  if(curU && users.some(u=>u.id===curU)) sel.value=curU;
+  await renderMatchPredictions();
   await renderUserPredictions();
+}
+async function renderMatchPredictions(){
+  const mid=$('#predm-match').value;
+  const el=$('#predm-list');
+  if(!mid){ el.innerHTML=''; return; }
+  const matches=await store.get(K.matches)||[];
+  const m=matches.find(x=>x.id===mid); if(!m){ el.innerHTML=''; return; }
+  const users=await store.get(K.users)||[];
+  if(!users.length){ el.innerHTML='<div class="empty" style="margin-top:12px"><div class="ic">👥</div>لا يوجد أعضاء.</div>'; return; }
+  const done=m.status==='finished';
+  const rows=[];
+  for(const u of users){
+    const preds=await store.get(K.pred(u.id))||{};
+    const p=preds[mid]; const s=scoreFor(p,m);
+    rows.push(`<tr><td>${esc(u.name)}</td><td>${u.id}</td><td class="pitch">${p?`${p.a} : ${p.b}`:'<span class="mini">لم يتوقّع</span>'}</td>${done?`<td>${p?ptsTag(s):''}</td>`:''}</tr>`);
+  }
+  el.innerHTML=`<div class="tablewrap" style="margin-top:12px"><table><thead><tr><th>العضو</th><th>اسم المستخدم</th><th>التوقّع</th>${done?'<th>النقاط</th>':''}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
 }
 async function renderUserPredictions(){
   const uid = $('#pred-user').value;
@@ -896,14 +944,75 @@ async function adminSavePred(uid,mid){
   const preds = await store.get(K.pred(uid)) || {};
   preds[mid] = {a,b,ts:Date.now()};
   await store.set(K.pred(uid),preds);
-  toast('تم تعديل التوقّع ✓'); renderUserPredictions(); renderAdminStats();
+  toast('تم تعديل التوقّع ✓'); renderUserPredictions(); renderMatchPredictions(); renderAdminStats();
 }
 async function adminDelPred(uid,mid){
   if(!confirm('حذف توقّع هذا العضو لهذه المباراة؟')) return;
   const preds = await store.get(K.pred(uid)) || {};
   delete preds[mid];
   await store.set(K.pred(uid),preds);
-  toast('تم حذف التوقّع'); renderUserPredictions(); renderAdminStats();
+  toast('تم حذف التوقّع'); renderUserPredictions(); renderMatchPredictions(); renderAdminStats();
+}
+
+/* ============ PRINT / PDF ============ */
+function openPrint(title, inner){
+  const w = window.open('', '_blank');
+  if(!w){ toast('فعّل السماح بالنوافذ المنبثقة للطباعة'); return; }
+  w.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>${title}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@600;700&family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    @page{margin:12mm}
+    html,body{margin:0}
+    body{font-family:'Tajawal',system-ui,Arial,sans-serif;background:#08160e;color:#f4f2e9;padding:26px}
+    .head{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+    .logo{font-size:26px}
+    h1{font-family:'Reem Kufi',sans-serif;color:#f5c344;margin:0;font-size:24px}
+    .sub{color:#86a394;font-size:12.5px;margin-bottom:18px}
+    table{width:100%;border-collapse:collapse;font-size:14px;border:1px solid #1f4530;border-radius:10px;overflow:hidden}
+    th,td{padding:10px 12px;text-align:right;border-bottom:1px solid #1f4530}
+    thead th{background:#0c2014;color:#86a394;font-size:12.5px}
+    tbody tr:nth-child(even){background:#0c2014}
+    .gold{color:#f5c344;font-weight:800}
+    .pitch{color:#22c55e;font-weight:700}
+    .card{background:#11291c;border:1px solid #1f4530;border-radius:12px;padding:14px;margin-bottom:14px}
+    .card b{font-size:16px} .flag{font-size:20px}
+  </style></head><body>
+  <div class="head"><span class="logo">🏆</span><h1>${title}</h1></div>
+  <div class="sub">كأس العالم 2026 — طُبع في ${new Date().toLocaleString('ar')}</div>
+  ${inner}
+  </body></html>`);
+  w.document.close(); w.focus();
+  setTimeout(()=>{ try{ w.print(); }catch(e){} }, 700);
+}
+async function printStandings(){
+  const rows = await computeStandings();
+  if(!rows.length){ toast('لا يوجد بيانات للطباعة'); return; }
+  const body = `<table><thead><tr><th>#</th><th>العضو</th><th>النقاط</th><th>مطابق</th><th>فائز</th><th>خاطئ</th><th>توقّعات</th></tr></thead><tbody>
+    ${rows.map((r,i)=>`<tr><td class="gold">${i+1}</td><td>${esc(r.name)}</td><td class="gold">${r.pts}</td><td>${r.exact}</td><td>${r.outcome}</td><td>${r.wrong}</td><td>${r.made}</td></tr>`).join('')}
+  </tbody></table>`;
+  openPrint('ترتيب التوقّعات', body);
+}
+async function printMatchPredictions(){
+  const mid=$('#predm-match').value;
+  if(!mid){ toast('اختر مباراة أولاً'); return; }
+  const matches=await store.get(K.matches)||[];
+  const m=matches.find(x=>x.id===mid); if(!m){ toast('المباراة غير موجودة'); return; }
+  const users=await store.get(K.users)||[];
+  if(!users.length){ toast('لا يوجد أعضاء'); return; }
+  const done=m.status==='finished';
+  const rows=[];
+  for(const u of users){
+    const preds=await store.get(K.pred(u.id))||{};
+    const p=preds[mid]; const s=scoreFor(p,m);
+    let pts='';
+    if(done) pts=`<td class="gold">${p?(s>0?'+'+s:s):'—'}</td>`;
+    rows.push(`<tr><td>${esc(u.name)}</td><td>${u.id}</td><td class="pitch">${p?`${p.a} : ${p.b}`:'—'}</td>${pts}</tr>`);
+  }
+  const head=`<div class="card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span class="flag">${m.f1}</span> <b>${esc(m.t1)}</b> <span style="color:#86a394">×</span> <b>${esc(m.t2)}</b> <span class="flag">${m.f2}</span></div>
+    <div class="sub" style="margin:0">${esc(fmtFull(m.kickoff))}${done?` — النتيجة النهائية: ${m.r1} : ${m.r2}`:' — لم تنتهِ بعد'}</div></div>`;
+  const table=`<table><thead><tr><th>العضو</th><th>اسم المستخدم</th><th>التوقّع</th>${done?'<th>النقاط</th>':''}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
+  openPrint('توقّعات مباراة', head+table);
 }
 
 /* ================= STANDINGS ================= */
