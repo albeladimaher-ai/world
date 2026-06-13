@@ -314,7 +314,8 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:24px 0}
 
     <!-- standings -->
     <div id="admin-standings" class="hidden">
-      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px">
+        <button class="btn ghost sm" onclick="refreshStandingsNow()">🔄 تحديث</button>
         <button class="btn gold sm" onclick="printStandings()">🖨️ طباعة الترتيب (PDF)</button>
       </div>
       <div class="legend">
@@ -378,7 +379,8 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:24px 0}
     <div id="user-matches"></div>
     <div id="user-mine" class="hidden"></div>
     <div id="user-board" class="hidden">
-      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px">
+        <button class="btn ghost sm" onclick="refreshStandingsNow()">🔄 تحديث</button>
         <button class="btn gold sm" onclick="printStandings()">🖨️ طباعة الترتيب (PDF)</button>
       </div>
       <div class="legend">
@@ -659,7 +661,7 @@ async function userLogin(){
   if(u){ CUR={role:'user',user:u}; $('#u-id').value='';$('#u-pass').value=''; openUser(); }
   else $('#login-msg').innerHTML='<div class="msg err">اسم المستخدم أو كلمة المرور غير صحيحة.</div>';
 }
-function logout(){ CUR=null; clearInterval(window._tick); show('view-login'); switchLogin('user'); }
+function logout(){ CUR=null; clearInterval(window._tick); clearInterval(window._sTick); show('view-login'); switchLogin('user'); }
 
 /* ================= ADMIN ================= */
 async function openAdmin(){
@@ -667,6 +669,8 @@ async function openAdmin(){
   if(!DB_OK){ $('#admin-persist').classList.remove('hidden'); $('#admin-persist').textContent='تعذّر الاتصال بقاعدة البيانات (Supabase). تأكد من اتصال الإنترنت ومن صحّة إعدادات Supabase.'; }
   await renderAdminStats();
   await adminTabRefresh();
+  clearInterval(window._sTick);
+  window._sTick=setInterval(refreshStandingsIfVisible, 20000);
 }
 function adminTab(name,btn){
   document.querySelectorAll('#admin-nav button').forEach(b=>b.classList.remove('active'));
@@ -782,7 +786,7 @@ async function saveAdj(uid){
   if(!u){ toast('العضو غير موجود'); return; }
   u.adj=v;
   const ok=await store.set(K.users,users);
-  if(ok){ toast('تم حفظ تعديل النقاط ✓'); renderMembers(); renderAdminStats(); }
+  if(ok){ toast('تم حفظ تعديل النقاط ✓'); renderMembers(); renderAdminStats(); refreshStandingsIfVisible(); }
 }
 async function clearAdj(uid){
   const users=await store.get(K.users)||[];
@@ -790,7 +794,7 @@ async function clearAdj(uid){
   if(!u) return;
   u.adj=0;
   const ok=await store.set(K.users,users);
-  if(ok){ toast('تم تصفير التعديل اليدوي'); renderMembers(); renderAdminStats(); }
+  if(ok){ toast('تم تصفير التعديل اليدوي'); renderMembers(); renderAdminStats(); refreshStandingsIfVisible(); }
 }
 async function delUser(uid){
   if(!confirm('حذف هذا العضو وكل توقعاته؟')) return;
@@ -1086,6 +1090,22 @@ async function computeStandings(){
   rows.sort((a,b)=> b.pts-a.pts || b.exact-a.exact || b.outcome-a.outcome || a.name.localeCompare(b.name,'ar'));
   return rows;
 }
+/* ===== تحديث جدول الترتيب المعروض حالياً (مشرف أو عضو) من قاعدة البيانات ===== */
+function standingsTarget(){
+  if(CUR && CUR.role==='admin' && !$('#admin-standings').classList.contains('hidden')) return {sel:'#standings-admin', me:null};
+  if(CUR && CUR.role==='user' && !$('#user-board').classList.contains('hidden')) return {sel:'#board-user', me:CUR.user.id};
+  return null;
+}
+async function refreshStandingsIfVisible(){
+  const t=standingsTarget();
+  if(t) await renderStandings(t.sel, t.me);
+}
+async function refreshStandingsNow(){
+  const t=standingsTarget();
+  if(!t){ return; }
+  await renderStandings(t.sel, t.me);
+  toast('تم تحديث الترتيب ✓');
+}
 async function renderStandings(target,meId){
   const rows=await computeStandings();
   const el=$(target);
@@ -1112,6 +1132,8 @@ async function openUser(){
   // tick countdowns / lock state every 30s while on matches tab
   clearInterval(window._tick);
   window._tick=setInterval(()=>{ if(CUR&&CUR.role==='user' && !$('#user-matches').classList.contains('hidden')) renderUserMatches(); }, 30000);
+  clearInterval(window._sTick);
+  window._sTick=setInterval(refreshStandingsIfVisible, 20000);
 }
 async function renderUserAll(){
   await renderUserStats();
