@@ -185,9 +185,34 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:24px 0}
 }
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--line2);color:var(--cream);padding:12px 20px;border-radius:12px;font-weight:700;font-size:14px;box-shadow:var(--shadow);z-index:99;opacity:0;transition:.25s;pointer-events:none}
 .toast.show{opacity:1;bottom:30px}
+
+/* ===== لافتة وامضة + بروق ===== */
+@keyframes flashBlink{0%,55%{opacity:1}56%,100%{opacity:.18}}
+@keyframes flashGlow{0%,100%{text-shadow:0 0 8px var(--gold),0 0 16px rgba(245,195,68,.55)}50%{text-shadow:0 0 18px #fff,0 0 34px var(--gold),0 0 50px rgba(245,195,68,.7)}}
+@keyframes boltSwing{0%,100%{transform:rotate(-12deg) scale(1)}50%{transform:rotate(12deg) scale(1.18)}}
+.flash-banner{
+  display:flex;align-items:center;justify-content:center;gap:12px;
+  font-family:'Reem Kufi',sans-serif;font-weight:700;font-size:22px;letter-spacing:.5px;
+  color:var(--gold);
+  background:linear-gradient(90deg,transparent,rgba(245,195,68,.14),transparent);
+  border:1px solid var(--gold-d);border-radius:13px;padding:11px 14px;margin:0 0 16px;
+  animation:flashBlink .8s steps(1) infinite, flashGlow 1.3s ease-in-out infinite;
+}
+.flash-banner .bolt{display:inline-block;animation:boltSwing .6s ease-in-out infinite;font-size:24px}
+/* ومضات البرق على كامل الشاشة */
+.lightning{position:fixed;inset:0;background:#eaf2ff;opacity:0;pointer-events:none;z-index:70;mix-blend-mode:screen;animation:lightningFlash 7s infinite}
+@keyframes lightningFlash{
+  0%,2.4%{opacity:0}
+  2.8%{opacity:.55}
+  3.4%{opacity:.08}
+  4%{opacity:.62}
+  4.8%{opacity:0}
+  100%{opacity:0}
+}
 </style>
 </head>
 <body>
+<div class="lightning"></div>
 
 <!-- ============ LOGIN ============ -->
 <div id="view-login" class="center-screen hidden">
@@ -198,6 +223,7 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:24px 0}
       <h1>توقعات كأس العالم</h1>
       <p>سجّل الدخول لتوقّع نتائج المباريات</p>
     </div>
+    <div class="flash-banner"><span class="bolt">⚡</span> مغصي مغصاه <span class="bolt">⚡</span></div>
     <div class="tabs">
       <button id="tab-user" class="active" onclick="switchLogin('user')">عضو</button>
       <button id="tab-admin" onclick="switchLogin('admin')">مشرف</button>
@@ -357,6 +383,7 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:24px 0}
 <!-- ============ USER ============ -->
 <div id="view-user" class="hidden">
   <div class="wrap">
+    <div class="flash-banner"><span class="bolt">⚡</span> مغصي مغصاه <span class="bolt">⚡</span></div>
     <div class="topbar">
       <div class="brand">
         <div class="logo">🏆</div>
