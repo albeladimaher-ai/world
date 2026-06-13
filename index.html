@@ -784,22 +784,30 @@ async function setAdj(uid, value){
   if(!u){ toast('العضو غير موجود'); return; }
   u.adj=value;
   const ok=await store.set(K.users,users);
-  if(!ok){ toast('تعذّر الحفظ — تحقّق من اتصال قاعدة البيانات'); return; }
   // إعادة القراءة من قاعدة البيانات للتأكّد من ثبات القيمة فعلاً
   const after=await store.get(K.users)||[];
   const ua=after.find(x=>x.uid===uid) || u;
   const savedAdj=Number(ua.adj)||0;
+  const persisted = ok && savedAdj===value; // هل ثبتت القيمة المطلوبة فعلاً في القاعدة؟
   const matches=await store.get(K.matches)||[];
   const preds=await store.get(K.pred(ua.id))||{};
   let auto=0; for(const m of matches){ const s=scoreFor(preds[m.id],m); if(s) auto+=s; }
   const total=auto+savedAdj;
   await renderMembers(); renderAdminStats(); refreshStandingsIfVisible();
-  // إبقاء المحرّر مفتوحاً على القيمة المؤكّدة ليرى المشرف النتيجة مباشرة
-  const box=document.getElementById('adj_'+uid); if(box) box.classList.remove('hidden');
-  const inp=document.getElementById('adjv_'+uid); if(inp) inp.value=savedAdj;
-  toast(savedAdj===0
-    ? `تم التصفير — نقاط ${ua.name}: ${total}`
-    : `تم الحفظ — نقاط ${ua.name}: ${total} (يدوي ${savedAdj>0?'+':''}${savedAdj})`);
+  // إبقاء المحرّر مفتوحاً وإظهار صندوق نتيجة ثابت (لا يختفي) يكشف الحقيقة
+  const box=document.getElementById('adj_'+uid);
+  if(box){
+    box.classList.remove('hidden');
+    const inp=document.getElementById('adjv_'+uid); if(inp) inp.value=savedAdj;
+    let res=box.querySelector('.adjres');
+    if(!res){ res=document.createElement('div'); res.className='adjres'; res.style.marginTop='10px'; box.appendChild(res); }
+    if(persisted){
+      res.innerHTML=`<div class="msg ok">✓ تم الحفظ وتم التأكّد من قاعدة البيانات.<br>نقاط <b>${esc(ua.name)}</b> الآن <b>${total}</b> (تلقائي ${auto} + يدوي ${savedAdj>0?'+':''}${savedAdj}).<br><span class="mini">افتح تبويب «الترتيب» أو اضغط 🔄 تحديث لرؤيته في الجدول.</span></div>`;
+    } else {
+      res.innerHTML=`<div class="msg err">✗ القيمة لم تثبت في قاعدة البيانات.<br>المطلوب: <b>${value}</b> — الموجود فعلاً بعد القراءة: <b>${savedAdj}</b>.<br><span class="mini">${ok?'الكتابة لم تُرجع خطأً لكن لم تُطبّق — السبب الأرجح سياسة RLS تمنع التحديث (UPDATE).':'تعذّر الاتصال/الكتابة في Supabase.'} اذهب إلى تبويب «الإعدادات» ← «اختبار الاتصال» ونفّذ أوامر SQL، ثم أعد المحاولة.</span></div>`;
+    }
+  }
+  toast(persisted ? (value===0?`تم التصفير — نقاط ${ua.name}: ${total}`:`تم الحفظ — نقاط ${ua.name}: ${total}`) : 'لم تثبت القيمة — راجع التفاصيل');
 }
 async function saveAdj(uid){
   const v=parseInt(document.getElementById('adjv_'+uid).value,10);
