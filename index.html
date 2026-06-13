@@ -135,6 +135,19 @@ label{display:block;font-size:13px;color:var(--muted);margin:0 2px 6px;font-weig
 .pts-tag.pm{color:var(--danger);background:var(--danger-bg);border:1px solid #5a2420}
 .pts-tag.p0{color:var(--muted);background:var(--bg2);border:1px solid var(--line)}
 
+/* ---- others' predictions (member view, after lock) ---- */
+.others{margin-top:12px}
+.others-toggle{display:flex;justify-content:flex-end}
+.others-box{margin-top:10px;border:1px dashed var(--line2);border-radius:12px;overflow:hidden}
+.others-box .oh{background:var(--bg2);color:var(--muted);font-size:12.5px;font-weight:700;padding:9px 13px;border-bottom:1px solid var(--line)}
+.opred{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 13px;border-top:1px solid var(--line);font-size:14px}
+.opred:first-of-type{border-top:none}
+.opred.me{background:rgba(34,197,94,.07)}
+.opred .onm{font-weight:700}
+.opred .onm .youtag{color:var(--pitch);font-size:11.5px;margin-right:4px}
+.opred .osc{font-family:'Reem Kufi';font-weight:800;font-size:16px;color:var(--cream)}
+.opred .right{display:flex;align-items:center;gap:9px}
+
 /* ---- table ---- */
 .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px}
 table{width:100%;border-collapse:collapse;font-size:14px;min-width:480px}
@@ -583,9 +596,14 @@ function countdownText(m){
 }
 function scoreFor(p,m){
   if(!p || m.status!=='finished') return null;
+  // 1) مطابقة تامة للنتيجة (تشمل التعادل المطابق تماماً مثل 1:1 = 1:1) = 3 نقاط
   if(p.a===m.r1 && p.b===m.r2) return 3;
-  const ps=Math.sign(p.a-p.b), rs=Math.sign(m.r1-m.r2);
-  return (ps===rs && ps!==0) ? 1 : 0; // التعادل لا يمنح نقطة المواساة — فقط المطابقة التامة (3)
+  // 2) أي توقّع تعادل غير مطابق = 0  (لا تُمنح نقطة على التعادل إطلاقاً)
+  if(p.a===p.b) return 0;
+  // 3) النتيجة الفعلية تعادل والتوقّع ليس تعادلاً = 0
+  if(m.r1===m.r2) return 0;
+  // 4) فائز صحيح بنتيجة مختلفة (مباراة حُسم فيها فائز) = 1
+  return (Math.sign(p.a-p.b)===Math.sign(m.r1-m.r2)) ? 1 : 0;
 }
 function ptsTag(s){
   if(s===3) return '<span class="pts-tag p3">+3 مطابق</span>';
@@ -1115,9 +1133,16 @@ async function renderUserMatches(){
         <button class="btn tiny gold" onclick="savePred('${m.id}')">${p?'تعديل التوقّع':'حفظ التوقّع'}</button>
       </div>`;
     }
+    // ===== توقّعات بقية الأعضاء — تظهر فقط بعد إغلاق التوقّع =====
+    const others = isLocked(m) ? `<div class="others">
+        <div class="others-toggle">
+          <button class="btn tiny ghost" onclick="toggleOthers('${m.id}',this)">👁️ توقّعات الأعضاء</button>
+        </div>
+        <div class="others-box hidden" id="others_${m.id}"></div>
+      </div>` : '';
     return `<div class="match"><div class="meta"><span class="kickoff">🗓️ ${esc(fmtFull(m.kickoff))}</span>${badge}</div>
       <div class="deadline${isLocked(m)?' passed':''}">⏳ ${done?'انتهت المباراة':(isLocked(m)?'انتهت مهلة التوقّع':'آخر موعد للتوقّع:')} ${done?'':`<b>${esc(fmtFull(lockTime(m)))}</b>`}</div>
-      ${body}${foot}</div>`;
+      ${body}${foot}${others}</div>`;
   }).join('');
 }
 function boardWithPred(m,p,locked){
@@ -1132,6 +1157,47 @@ function boardWithPred(m,p,locked){
     </div>
     <div class="team"><div class="flag">${m.f2}</div><div class="nm">${esc(m.t2)}</div></div>
   </div>`;
+}
+/* ===== عرض/إخفاء توقّعات بقية الأعضاء لمباراة بعد إغلاق التوقّع ===== */
+async function toggleOthers(mid, btn){
+  const box = document.getElementById('others_'+mid);
+  if(!box) return;
+  // إخفاء إن كان ظاهراً
+  if(!box.classList.contains('hidden')){
+    box.classList.add('hidden'); box.innerHTML=''; btn.textContent='👁️ توقّعات الأعضاء';
+    return;
+  }
+  const matches = await store.get(K.matches)||[];
+  const m = matches.find(x=>x.id===mid);
+  if(!m || !isLocked(m)){ toast('تظهر توقّعات الأعضاء بعد إغلاق التوقّع'); return; }
+  btn.disabled=true; const old=btn.textContent; btn.textContent='جارٍ التحميل…';
+  const users = await store.get(K.users)||[];
+  const list=[];
+  for(const u of users){
+    const preds = await store.get(K.pred(u.id))||{};
+    const p = preds[mid];
+    if(!p) continue;
+    list.push({ name:u.name, id:u.id, a:p.a, b:p.b, s:scoreFor(p,m), me:String(u.id)===String(CUR.user.id) });
+  }
+  btn.disabled=false; btn.textContent='🙈 إخفاء التوقّعات';
+  if(!list.length){
+    box.innerHTML = '<div class="oh">توقّعات الأعضاء لهذه المباراة</div><div class="opred"><span class="onm" style="color:var(--muted);font-weight:500">لم يتوقّع أي عضو هذه المباراة.</span></div>';
+    box.classList.remove('hidden');
+    return;
+  }
+  const done = m.status==='finished';
+  // ترتيب: المطابق أولاً ثم الفائز الصحيح ثم البقية، وأنت دائماً مميّز
+  list.sort((x,y)=> (y.s||0)-(x.s||0) || x.name.localeCompare(y.name,'ar'));
+  const rowsHtml = list.map(o=>`
+    <div class="opred${o.me?' me':''}">
+      <span class="onm">${esc(o.name)}${o.me?'<span class="youtag">(أنت)</span>':''}</span>
+      <span class="right">
+        <span class="osc">${o.a} : ${o.b}</span>
+        ${done?ptsTag(o.s):''}
+      </span>
+    </div>`).join('');
+  box.innerHTML = `<div class="oh">توقّعات الأعضاء (${list.length}) — ${esc(m.t1)} × ${esc(m.t2)}</div>${rowsHtml}`;
+  box.classList.remove('hidden');
 }
 async function savePred(id){
   const matches=await store.get(K.matches)||[];
