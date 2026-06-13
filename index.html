@@ -304,7 +304,7 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:24px 0}
       </div>
       <div class="legend">
         <span><b>+3</b> توقّع مطابق</span>
-        <span><b>+1</b> فائز صحيح بنتيجة مختلفة</span>
+        <span><b>+1</b> فائز صحيح بنتيجة مختلفة (لا يشمل التعادل)</span>
         <span><b>0</b> توقّع خاطئ (لا خصم)</span>
       </div>
       <div id="standings-admin"></div>
@@ -368,7 +368,7 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:24px 0}
       </div>
       <div class="legend">
         <span><b>+3</b> توقّع مطابق</span>
-        <span><b>+1</b> فائز صحيح بنتيجة مختلفة</span>
+        <span><b>+1</b> فائز صحيح بنتيجة مختلفة (لا يشمل التعادل)</span>
         <span><b>0</b> توقّع خاطئ (لا خصم)</span>
       </div>
       <div id="board-user"></div>
@@ -585,7 +585,7 @@ function scoreFor(p,m){
   if(!p || m.status!=='finished') return null;
   if(p.a===m.r1 && p.b===m.r2) return 3;
   const ps=Math.sign(p.a-p.b), rs=Math.sign(m.r1-m.r2);
-  return ps===rs ? 1 : 0;
+  return (ps===rs && ps!==0) ? 1 : 0; // التعادل لا يمنح نقطة المواساة — فقط المطابقة التامة (3)
 }
 function ptsTag(s){
   if(s===3) return '<span class="pts-tag p3">+3 مطابق</span>';
