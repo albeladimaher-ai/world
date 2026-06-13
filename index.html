@@ -778,23 +778,36 @@ function toggleAdj(uid){
   const box=document.getElementById('adj_'+uid);
   if(box) box.classList.toggle('hidden');
 }
-async function saveAdj(uid){
-  const v=parseInt(document.getElementById('adjv_'+uid).value,10);
-  if(Number.isNaN(v)){ toast('أدخل رقماً صحيحاً (موجب للإضافة، سالب للخصم)'); return; }
+async function setAdj(uid, value){
   const users=await store.get(K.users)||[];
   const u=users.find(x=>x.uid===uid);
   if(!u){ toast('العضو غير موجود'); return; }
-  u.adj=v;
+  u.adj=value;
   const ok=await store.set(K.users,users);
-  if(ok){ toast('تم حفظ تعديل النقاط ✓'); renderMembers(); renderAdminStats(); refreshStandingsIfVisible(); }
+  if(!ok){ toast('تعذّر الحفظ — تحقّق من اتصال قاعدة البيانات'); return; }
+  // إعادة القراءة من قاعدة البيانات للتأكّد من ثبات القيمة فعلاً
+  const after=await store.get(K.users)||[];
+  const ua=after.find(x=>x.uid===uid) || u;
+  const savedAdj=Number(ua.adj)||0;
+  const matches=await store.get(K.matches)||[];
+  const preds=await store.get(K.pred(ua.id))||{};
+  let auto=0; for(const m of matches){ const s=scoreFor(preds[m.id],m); if(s) auto+=s; }
+  const total=auto+savedAdj;
+  await renderMembers(); renderAdminStats(); refreshStandingsIfVisible();
+  // إبقاء المحرّر مفتوحاً على القيمة المؤكّدة ليرى المشرف النتيجة مباشرة
+  const box=document.getElementById('adj_'+uid); if(box) box.classList.remove('hidden');
+  const inp=document.getElementById('adjv_'+uid); if(inp) inp.value=savedAdj;
+  toast(savedAdj===0
+    ? `تم التصفير — نقاط ${ua.name}: ${total}`
+    : `تم الحفظ — نقاط ${ua.name}: ${total} (يدوي ${savedAdj>0?'+':''}${savedAdj})`);
+}
+async function saveAdj(uid){
+  const v=parseInt(document.getElementById('adjv_'+uid).value,10);
+  if(Number.isNaN(v)){ toast('أدخل رقماً صحيحاً (موجب للإضافة، سالب للخصم)'); return; }
+  await setAdj(uid, v);
 }
 async function clearAdj(uid){
-  const users=await store.get(K.users)||[];
-  const u=users.find(x=>x.uid===uid);
-  if(!u) return;
-  u.adj=0;
-  const ok=await store.set(K.users,users);
-  if(ok){ toast('تم تصفير التعديل اليدوي'); renderMembers(); renderAdminStats(); refreshStandingsIfVisible(); }
+  await setAdj(uid, 0);
 }
 async function delUser(uid){
   if(!confirm('حذف هذا العضو وكل توقعاته؟')) return;
