@@ -922,19 +922,78 @@ async function saveAdmin(){
   const ok = await store.set(K.admin, {user, hash});
   if(ok){ $('#adm-pass').value=''; toast('تم حفظ بيانات دخول المشرف ✓'); }
 }
+const SQL_SETUP = `create table if not exists public.kv (
+  key text primary key,
+  value jsonb
+);
+
+alter table public.kv enable row level security;
+
+drop policy if exists "kv_public_all" on public.kv;
+create policy "kv_public_all" on public.kv
+  for all
+  to anon, authenticated
+  using (true)
+  with check (true);`;
+
 async function testDB(){
   const el=$('#db-status');
-  el.innerHTML='<div class="msg" style="background:var(--bg2);color:var(--muted);margin-top:10px">جارٍ الاختبار…</div>';
-  const key='wc26_selftest';
-  const stamp=Date.now();
-  const ok = await store.set(key,{stamp,msg:'ok'});
-  const got = await store.get(key);
-  await store.del(key);
-  if(ok && got && got.stamp===stamp){
-    el.innerHTML='<div class="msg ok" style="margin-top:10px">✓ الاتصال يعمل — البيانات تُحفظ وتُقرأ من Supabase بنجاح.</div>';
-  } else {
-    el.innerHTML='<div class="msg err" style="margin-top:10px">✗ فشل الحفظ في Supabase. تأكد من تنفيذ أوامر إنشاء جدول kv وسياساته، ومن صحّة الرابط والمفتاح.</div>';
-  }
+  if(!sb){ el.innerHTML='<div class="msg err" style="margin-top:10px">✗ لم تتم تهيئة عميل Supabase. تحقّق من الرابط والمفتاح في الكود.</div>'; return; }
+  const steps=[];
+  const render=(extra='')=>{
+    el.innerHTML='<div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">'+steps.map(s=>{
+      const cls=s.ok===true?'ok':s.ok===false?'err':'';
+      const bg=s.ok===null?'background:var(--bg2);color:var(--muted)':'';
+      const ic=s.ok===true?'✓':s.ok===false?'✗':'…';
+      return `<div class="msg ${cls}" style="${bg}">${ic} ${s.t}${s.d?`<div class="mini" style="margin-top:4px;opacity:.9;word-break:break-word">${esc(s.d)}</div>`:''}</div>`;
+    }).join('')+'</div>'+extra;
+  };
+  el.innerHTML='<div class="msg" style="background:var(--bg2);color:var(--muted);margin-top:10px">… جارٍ الفحص</div>';
+  const tkey='wc26_diag_'+Date.now();
+
+  // 1) قراءة (SELECT) — وجود الجدول وصلاحية القراءة
+  try{
+    const {error}=await sb.from('kv').select('key').limit(1);
+    steps.push(error?{ok:false,t:'القراءة (SELECT) من جدول kv',d:error.message}:{ok:true,t:'القراءة (SELECT) من جدول kv'});
+  }catch(e){ steps.push({ok:false,t:'القراءة (SELECT) من جدول kv',d:String(e&&e.message||e)}); }
+  render();
+
+  // 2) كتابة صف جديد (INSERT عبر upsert)
+  try{
+    const {error}=await sb.from('kv').upsert({key:tkey,value:{n:1}},{onConflict:'key'});
+    steps.push(error?{ok:false,t:'الكتابة (INSERT) صف جديد',d:error.message}:{ok:true,t:'الكتابة (INSERT) صف جديد'});
+  }catch(e){ steps.push({ok:false,t:'الكتابة (INSERT) صف جديد',d:String(e&&e.message||e)}); }
+  render();
+
+  // 3) تحديث صف موجود (UPDATE) — نفس مسار حفظ/تصفير تعديل النقاط
+  try{
+    const {error}=await sb.from('kv').upsert({key:tkey,value:{n:2,adj:7}},{onConflict:'key'});
+    steps.push(error?{ok:false,t:'تحديث صف موجود (UPDATE) — مسار تعديل النقاط',d:error.message}:{ok:true,t:'تحديث صف موجود (UPDATE) — مسار تعديل النقاط'});
+  }catch(e){ steps.push({ok:false,t:'تحديث صف موجود (UPDATE) — مسار تعديل النقاط',d:String(e&&e.message||e)}); }
+  render();
+
+  // 4) إعادة القراءة والتأكّد من ثبات القيمة المحدّثة فعلاً
+  try{
+    const {data,error}=await sb.from('kv').select('value').eq('key',tkey).maybeSingle();
+    if(error) steps.push({ok:false,t:'التأكّد من ثبات القيمة بعد التحديث',d:error.message});
+    else if(data && data.value && Number(data.value.adj)===7) steps.push({ok:true,t:'التأكّد من ثبات القيمة (adj=7 ثبتت بنجاح)'});
+    else steps.push({ok:false,t:'التأكّد من ثبات القيمة بعد التحديث',d:'الكتابة لم تُرجع خطأً لكن القيمة لم تثبت فعلياً — السبب الأرجح: سياسة UPDATE ناقصة في RLS، فالتحديث لا يطبّق رغم عدم ظهور خطأ.'});
+  }catch(e){ steps.push({ok:false,t:'التأكّد من ثبات القيمة بعد التحديث',d:String(e&&e.message||e)}); }
+  render();
+
+  // 5) الحذف (DELETE) وتنظيف الصف التجريبي
+  try{
+    const {error}=await sb.from('kv').delete().eq('key',tkey);
+    steps.push(error?{ok:false,t:'الحذف (DELETE) للصف التجريبي',d:error.message}:{ok:true,t:'الحذف (DELETE) للصف التجريبي'});
+  }catch(e){ steps.push({ok:false,t:'الحذف (DELETE) للصف التجريبي',d:String(e&&e.message||e)}); }
+
+  const allOk=steps.every(s=>s.ok===true);
+  const summary = allOk
+    ? '<div class="msg ok" style="margin-top:8px">✓ كل العمليات سليمة — الحفظ والتحديث والقراءة والحذف من Supabase تعمل. تعديل النقاط سيثبت بشكل صحيح.</div>'
+    : '<div class="msg err" style="margin-top:8px">✗ توجد عملية فاشلة أعلاه. إن كان الفشل في «التحديث» أو «ثبات القيمة» فالسبب غالباً سياسات RLS ناقصة (موجودة سياسة SELECT/INSERT دون UPDATE). نفّذ الأوامر التالية في <b>SQL Editor</b> بلوحة Supabase ثم أعد الفحص:</div>'
+      + '<div class="note" style="margin-top:8px"><pre style="white-space:pre-wrap;direction:ltr;text-align:left;font-size:12px;margin:0;font-family:monospace">'+esc(SQL_SETUP)+'</pre></div>'
+      + '<button class="btn ghost sm" style="margin-top:10px" onclick="copyTxt(SQL_SETUP)">نسخ أوامر SQL</button>';
+  render(summary);
 }
 async function resetAll(){
   if(!confirm('سيتم حذف كل الأعضاء والمباريات والتوقعات نهائياً. متابعة؟')) return;
