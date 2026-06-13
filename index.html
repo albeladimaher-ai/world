@@ -1127,8 +1127,8 @@ function openPrint(title, inner){
 async function printStandings(){
   const rows = await computeStandings();
   if(!rows.length){ toast('لا يوجد بيانات للطباعة'); return; }
-  const body = `<table><thead><tr><th>#</th><th>العضو</th><th>النقاط</th><th>يدوي</th><th>مطابق</th><th>فائز</th><th>خاطئ</th><th>توقّعات</th></tr></thead><tbody>
-    ${rows.map((r,i)=>`<tr><td class="gold">${i+1}</td><td>${esc(r.name)}</td><td class="gold">${r.pts}</td><td>${r.adj?(r.adj>0?'+':'')+r.adj:'—'}</td><td>${r.exact}</td><td>${r.outcome}</td><td>${r.wrong}</td><td>${r.made}</td></tr>`).join('')}
+  const body = `<table><thead><tr><th>#</th><th>العضو</th><th>النقاط</th><th>مطابق</th><th>فائز</th><th>خاطئ</th><th>توقّعات</th></tr></thead><tbody>
+    ${rows.map((r,i)=>`<tr><td class="gold">${i+1}</td><td>${esc(r.name)}</td><td class="gold">${r.pts}</td><td>${r.exact}</td><td>${r.outcome}</td><td>${r.wrong}</td><td>${r.made}</td></tr>`).join('')}
   </tbody></table>`;
   openPrint('ترتيب التوقّعات', body);
 }
@@ -1191,14 +1191,13 @@ async function renderStandings(target,meId){
   const el=$(target);
   if(!rows.length){ el.innerHTML='<div class="empty"><div class="ic">📊</div>لا يوجد أعضاء لعرض ترتيبهم بعد.</div>'; return; }
   el.innerHTML = `<div class="tablewrap"><table>
-    <thead><tr><th>#</th><th>العضو</th><th>النقاط</th><th>يدوي</th><th>مطابق</th><th>فائز</th><th>خاطئ</th><th>توقّعات</th></tr></thead>
+    <thead><tr><th>#</th><th>العضو</th><th>النقاط</th><th>مطابق</th><th>فائز</th><th>خاطئ</th><th>توقّعات</th></tr></thead>
     <tbody>${rows.map((r,i)=>{
       const rk=i+1; const rc=rk<=3?'r'+rk:'';
       return `<tr class="${meId&&r.id===meId?'me':''}">
         <td class="rank ${rc}">${rk===1?'🥇':rk===2?'🥈':rk===3?'🥉':rk}</td>
         <td><b>${esc(r.name)}</b>${meId&&r.id===meId?' <span class="mini">(أنت)</span>':''}</td>
         <td><b style="color:var(--gold);font-family:Reem Kufi">${r.pts}</b></td>
-        <td>${r.adj?`<span style="color:var(--gold)">${r.adj>0?'+':''}${r.adj}</span>`:'—'}</td>
         <td>${r.exact}</td><td>${r.outcome}</td><td>${r.wrong}</td><td>${r.made}</td>
       </tr>`;
     }).join('')}</tbody></table></div>`;
