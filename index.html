@@ -163,6 +163,8 @@ tbody tr.me{background:rgba(34,197,94,.07)}
 .section-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:22px 2px 12px}
 .section-h h3{font-size:17px;margin:0}
 .row-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;margin-bottom:9px;background:var(--surface);flex-wrap:wrap}
+.member{margin-bottom:9px}
+.adj-box{background:var(--bg2);border:1px dashed var(--line2);border-radius:12px;padding:12px 14px;margin-top:8px}
 .cred{font-family:'Reem Kufi';letter-spacing:.5px}
 .cred span{color:var(--muted);font-family:'Tajawal';font-size:12px}
 .inline-form{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -734,17 +736,30 @@ async function renderMembers(){
   const rows=[];
   for(const u of users){
     const preds=await store.get(K.pred(u.id))||{};
-    let pts=0; for(const m of matches){ const s=scoreFor(preds[m.id],m); if(s) pts+=s; }
-    rows.push(`<div class="row-item">
-      <div>
-        <div class="cred" style="font-size:15px">${esc(u.name)}</div>
-        <div class="mini">رقم: <b style="color:var(--cream)">${u.id}</b> · كلمة المرور: <span class="pw" data-id="${u.uid}">••••••</span>
-          <button class="btn tiny ghost" style="margin-right:6px" onclick="togglePw('${u.uid}','${esc(u.pass)}',this)">إظهار</button>
+    let auto=0; for(const m of matches){ const s=scoreFor(preds[m.id],m); if(s) auto+=s; }
+    const adj=Number(u.adj)||0; const total=auto+adj;
+    const adjNote = adj!==0 ? ` · <span style="color:var(--gold)">يدوي ${adj>0?'+':''}${adj}</span> <span style="color:var(--muted-d)">(تلقائي ${auto})</span>` : '';
+    rows.push(`<div class="member">
+      <div class="row-item" style="margin-bottom:0">
+        <div>
+          <div class="cred" style="font-size:15px">${esc(u.name)}</div>
+          <div class="mini">رقم: <b style="color:var(--cream)">${u.id}</b> · كلمة المرور: <span class="pw" data-id="${u.uid}">••••••</span>
+            <button class="btn tiny ghost" style="margin-right:6px" onclick="togglePw('${u.uid}','${esc(u.pass)}',this)">إظهار</button>${adjNote}
+          </div>
+        </div>
+        <div style="display:flex;gap:7px;align-items:center">
+          <span class="points-pill" style="font-size:13px;padding:5px 11px">⭐ ${total}</span>
+          <button class="btn tiny ghost" onclick="toggleAdj('${u.uid}')">± النقاط</button>
+          <button class="btn tiny danger" onclick="delUser('${u.uid}')">حذف</button>
         </div>
       </div>
-      <div style="display:flex;gap:7px;align-items:center">
-        <span class="points-pill" style="font-size:13px;padding:5px 11px">⭐ ${pts}</span>
-        <button class="btn tiny danger" onclick="delUser('${u.uid}')">حذف</button>
+      <div class="adj-box hidden" id="adj_${u.uid}">
+        <label style="margin-bottom:8px">تعديل يدوي للنقاط — يُضاف فوق النقاط المحتسبة تلقائياً (رقم سالب للخصم)</label>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input id="adjv_${u.uid}" type="number" value="${adj}" style="max-width:130px">
+          <button class="btn tiny gold" onclick="saveAdj('${u.uid}')">حفظ</button>
+          <button class="btn tiny ghost" onclick="clearAdj('${u.uid}')">تصفير</button>
+        </div>
       </div>
     </div>`);
   }
@@ -754,6 +769,28 @@ function togglePw(uid,pass,btn){
   const span=document.querySelector('.pw[data-id="'+uid+'"]');
   if(span.textContent==='••••••'){ span.textContent=pass; btn.textContent='إخفاء'; }
   else { span.textContent='••••••'; btn.textContent='إظهار'; }
+}
+function toggleAdj(uid){
+  const box=document.getElementById('adj_'+uid);
+  if(box) box.classList.toggle('hidden');
+}
+async function saveAdj(uid){
+  const v=parseInt(document.getElementById('adjv_'+uid).value,10);
+  if(Number.isNaN(v)){ toast('أدخل رقماً صحيحاً (موجب للإضافة، سالب للخصم)'); return; }
+  const users=await store.get(K.users)||[];
+  const u=users.find(x=>x.uid===uid);
+  if(!u){ toast('العضو غير موجود'); return; }
+  u.adj=v;
+  const ok=await store.set(K.users,users);
+  if(ok){ toast('تم حفظ تعديل النقاط ✓'); renderMembers(); renderAdminStats(); }
+}
+async function clearAdj(uid){
+  const users=await store.get(K.users)||[];
+  const u=users.find(x=>x.uid===uid);
+  if(!u) return;
+  u.adj=0;
+  const ok=await store.set(K.users,users);
+  if(ok){ toast('تم تصفير التعديل اليدوي'); renderMembers(); renderAdminStats(); }
 }
 async function delUser(uid){
   if(!confirm('حذف هذا العضو وكل توقعاته؟')) return;
@@ -1006,8 +1043,8 @@ function openPrint(title, inner){
 async function printStandings(){
   const rows = await computeStandings();
   if(!rows.length){ toast('لا يوجد بيانات للطباعة'); return; }
-  const body = `<table><thead><tr><th>#</th><th>العضو</th><th>النقاط</th><th>مطابق</th><th>فائز</th><th>خاطئ</th><th>توقّعات</th></tr></thead><tbody>
-    ${rows.map((r,i)=>`<tr><td class="gold">${i+1}</td><td>${esc(r.name)}</td><td class="gold">${r.pts}</td><td>${r.exact}</td><td>${r.outcome}</td><td>${r.wrong}</td><td>${r.made}</td></tr>`).join('')}
+  const body = `<table><thead><tr><th>#</th><th>العضو</th><th>النقاط</th><th>يدوي</th><th>مطابق</th><th>فائز</th><th>خاطئ</th><th>توقّعات</th></tr></thead><tbody>
+    ${rows.map((r,i)=>`<tr><td class="gold">${i+1}</td><td>${esc(r.name)}</td><td class="gold">${r.pts}</td><td>${r.adj?(r.adj>0?'+':'')+r.adj:'—'}</td><td>${r.exact}</td><td>${r.outcome}</td><td>${r.wrong}</td><td>${r.made}</td></tr>`).join('')}
   </tbody></table>`;
   openPrint('ترتيب التوقّعات', body);
 }
@@ -1037,13 +1074,14 @@ async function computeStandings(){
   const rows=[];
   for(const u of users){
     const preds=await store.get(K.pred(u.id))||{};
-    let pts=0,exact=0,outcome=0,wrong=0,made=0;
+    let auto=0,exact=0,outcome=0,wrong=0,made=0;
     for(const m of matches){
       const p=preds[m.id]; if(p) made++;
       const s=scoreFor(p,m);
-      if(s===3){pts+=3;exact++;} else if(s===1){pts+=1;outcome++;} else if(s===0){wrong++;}
+      if(s===3){auto+=3;exact++;} else if(s===1){auto+=1;outcome++;} else if(s===0){wrong++;}
     }
-    rows.push({...u,pts,exact,outcome,wrong,made});
+    const adj=Number(u.adj)||0;
+    rows.push({...u,autoPts:auto,adj,pts:auto+adj,exact,outcome,wrong,made});
   }
   rows.sort((a,b)=> b.pts-a.pts || b.exact-a.exact || b.outcome-a.outcome || a.name.localeCompare(b.name,'ar'));
   return rows;
@@ -1053,13 +1091,14 @@ async function renderStandings(target,meId){
   const el=$(target);
   if(!rows.length){ el.innerHTML='<div class="empty"><div class="ic">📊</div>لا يوجد أعضاء لعرض ترتيبهم بعد.</div>'; return; }
   el.innerHTML = `<div class="tablewrap"><table>
-    <thead><tr><th>#</th><th>العضو</th><th>النقاط</th><th>مطابق</th><th>فائز</th><th>خاطئ</th><th>توقّعات</th></tr></thead>
+    <thead><tr><th>#</th><th>العضو</th><th>النقاط</th><th>يدوي</th><th>مطابق</th><th>فائز</th><th>خاطئ</th><th>توقّعات</th></tr></thead>
     <tbody>${rows.map((r,i)=>{
       const rk=i+1; const rc=rk<=3?'r'+rk:'';
       return `<tr class="${meId&&r.id===meId?'me':''}">
         <td class="rank ${rc}">${rk===1?'🥇':rk===2?'🥈':rk===3?'🥉':rk}</td>
         <td><b>${esc(r.name)}</b>${meId&&r.id===meId?' <span class="mini">(أنت)</span>':''}</td>
         <td><b style="color:var(--gold);font-family:Reem Kufi">${r.pts}</b></td>
+        <td>${r.adj?`<span style="color:var(--gold)">${r.adj>0?'+':''}${r.adj}</span>`:'—'}</td>
         <td>${r.exact}</td><td>${r.outcome}</td><td>${r.wrong}</td><td>${r.made}</td>
       </tr>`;
     }).join('')}</tbody></table></div>`;
@@ -1089,11 +1128,9 @@ function userTab(name,btn){
   if(name==='board') renderStandings('#board-user',CUR.user.id);
 }
 async function renderUserStats(){
-  const matches=await store.get(K.matches)||[];
-  const preds=await store.get(K.pred(CUR.user.id))||{};
-  let pts=0,exact=0,made=0;
-  for(const m of matches){ const p=preds[m.id]; if(p)made++; const s=scoreFor(p,m); if(s===3){pts+=3;exact++;} else if(s===1)pts+=1; }
   const rows=await computeStandings();
+  const meRow=rows.find(r=>r.id===CUR.user.id);
+  const pts=meRow?meRow.pts:0, exact=meRow?meRow.exact:0, made=meRow?meRow.made:0;
   const rank=rows.findIndex(r=>r.id===CUR.user.id)+1;
   $('#u-points').innerHTML='⭐ '+pts;
   $('#user-stats').innerHTML = `
