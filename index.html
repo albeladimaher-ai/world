@@ -178,6 +178,25 @@ tbody tr.me{background:rgba(34,197,94,.07)}
 hr.sep{border:none;border-top:1px solid var(--line);margin:24px 0}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-bottom:16px}
 .legend b{color:var(--cream)}
+
+/* ---- match filter chips (upcoming / all / finished) ---- */
+.match-filter{display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px}
+.match-filter .mf{white-space:nowrap;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--muted);padding:9px 15px;border-radius:999px;font-weight:700;font-size:13.5px;transition:.15s}
+.match-filter .mf .ic{font-size:15px}
+.match-filter .mf .cnt{font-family:'Reem Kufi';font-size:12px;background:var(--bg2);color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 8px}
+.match-filter .mf.active{color:#04150b;background:linear-gradient(180deg,var(--gold),var(--gold-d));border-color:var(--gold-d)}
+.match-filter .mf.active .cnt{background:rgba(0,0,0,.18);color:#241b00;border-color:transparent}
+
+/* ---- next upcoming match highlight ---- */
+.next-up{background:linear-gradient(180deg,rgba(245,195,68,.12),rgba(245,195,68,.04));border:1px solid var(--gold-d);border-radius:15px;padding:14px;margin-bottom:14px}
+.next-up .nh{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--gold);font-weight:700;margin-bottom:11px}
+.next-up .nh .dot{width:8px;height:8px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 4px rgba(245,195,68,.18)}
+.next-up .nteams{display:flex;align-items:center;justify-content:center;gap:14px;text-align:center}
+.next-up .nteams .nt{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0;flex:1}
+.next-up .nteams .nt .flag{font-size:40px;line-height:1}
+.next-up .nteams .nt .nm{font-weight:700;font-size:15px;word-break:break-word}
+.next-up .nteams .vs{font-family:'Reem Kufi';font-weight:700;color:var(--muted);font-size:14px}
+.next-up .ngo{margin-top:12px}
 @media(max-width:520px){
   .inline-form{grid-template-columns:1fr}
   .team .nm{font-size:13.5px}
@@ -1260,13 +1279,51 @@ async function renderUserStats(){
     ${stat(made,'توقّعاتك')}
     ${stat(exact,'مطابقة')}`;
 }
+let userMatchFilter = 'upcoming'; // 'upcoming' | 'all' | 'finished'
+function setUserMatchFilter(f){ userMatchFilter=f; renderUserMatches(); }
 async function renderUserMatches(){
   const matches=await sortedMatches();
   const preds=await store.get(K.pred(CUR.user.id))||{};
   const el=$('#user-matches');
   if(!matches.length){ el.innerHTML='<div class="empty"><div class="ic">⚽</div>لم تُضَف مباريات بعد. عُد لاحقاً.</div>'; return; }
-  // upcoming/open first, then locked-not-finished, then finished
-  el.innerHTML = matches.map(m=>{
+
+  // ===== شريط تصفية: القادمة / الكل / المنتهية =====
+  const upCount = matches.filter(m=>m.status!=='finished').length;
+  const finCount = matches.filter(m=>m.status==='finished').length;
+  const chips = `<div class="match-filter">
+    <button class="mf ${userMatchFilter==='upcoming'?'active':''}" onclick="setUserMatchFilter('upcoming')"><span class="ic">⚡</span> القادمة <span class="cnt">${upCount}</span></button>
+    <button class="mf ${userMatchFilter==='all'?'active':''}" onclick="setUserMatchFilter('all')"><span class="ic">📋</span> الكل <span class="cnt">${matches.length}</span></button>
+    <button class="mf ${userMatchFilter==='finished'?'active':''}" onclick="setUserMatchFilter('finished')"><span class="ic">🏁</span> المنتهية <span class="cnt">${finCount}</span></button>
+  </div>`;
+
+  // ===== بطاقة المباراة القادمة الأقرب (بأعلامها) — اختصار سريع للدخول =====
+  let nextUp='';
+  const nextOpen = matches.find(m=> m.status!=='finished' && !isLocked(m));
+  if(nextOpen){
+    const cd=countdownText(nextOpen);
+    nextUp = `<div class="next-up">
+      <div class="nh"><span class="dot"></span> المباراة القادمة · ${cd?esc(cd):'التوقّع مفتوح'}</div>
+      <div class="nteams">
+        <div class="nt"><div class="flag">${nextOpen.f1}</div><div class="nm">${esc(nextOpen.t1)}</div></div>
+        <div class="vs">VS</div>
+        <div class="nt"><div class="flag">${nextOpen.f2}</div><div class="nm">${esc(nextOpen.t2)}</div></div>
+      </div>
+      <button class="btn gold ngo" onclick="goToMatch('${nextOpen.id}')">⚡ توقّع الآن</button>
+    </div>`;
+  }
+
+  // ===== تطبيق التصفية =====
+  let list = matches;
+  if(userMatchFilter==='upcoming') list = matches.filter(m=>m.status!=='finished');
+  else if(userMatchFilter==='finished') list = matches.filter(m=>m.status==='finished');
+
+  if(!list.length){
+    const emptyMsg = userMatchFilter==='upcoming' ? 'لا توجد مباريات قادمة حالياً.' : (userMatchFilter==='finished' ? 'لا توجد مباريات منتهية بعد.' : 'لا توجد مباريات.');
+    el.innerHTML = chips + (userMatchFilter==='upcoming'?nextUp:'') + `<div class="empty"><div class="ic">⚽</div>${emptyMsg}</div>`;
+    return;
+  }
+
+  el.innerHTML = (userMatchFilter==='upcoming'?nextUp:'') + chips + list.map(m=>{
     const p=preds[m.id], locked=isLocked(m), done=m.status==='finished';
     let badge, body, foot='';
     if(done){
@@ -1298,10 +1355,24 @@ async function renderUserMatches(){
         </div>
         <div class="others-box hidden" id="others_${m.id}"></div>
       </div>` : '';
-    return `<div class="match"><div class="meta"><span class="kickoff">🗓️ ${esc(fmtFull(m.kickoff))}</span>${badge}</div>
+    return `<div class="match" id="umatch_${m.id}"><div class="meta"><span class="kickoff">🗓️ ${esc(fmtFull(m.kickoff))}</span>${badge}</div>
       <div class="deadline${isLocked(m)?' passed':''}">⏳ ${done?'انتهت المباراة':(isLocked(m)?'انتهت مهلة التوقّع':'آخر موعد للتوقّع:')} ${done?'':`<b>${esc(fmtFull(lockTime(m)))}</b>`}</div>
       ${body}${foot}${others}</div>`;
   }).join('');
+}
+/* ===== الانتقال السريع إلى بطاقة مباراة معيّنة وتمييزها ===== */
+function goToMatch(id){
+  if(userMatchFilter==='finished'){ userMatchFilter='upcoming'; }
+  renderUserMatches().then(()=>{
+    const card=document.getElementById('umatch_'+id);
+    if(!card) return;
+    card.scrollIntoView({behavior:'smooth',block:'center'});
+    card.style.transition='box-shadow .3s,border-color .3s';
+    card.style.boxShadow='0 0 0 3px rgba(245,195,68,.5)';
+    card.style.borderColor='var(--gold)';
+    setTimeout(()=>{ card.style.boxShadow=''; card.style.borderColor=''; }, 1600);
+    const inp=document.getElementById('p1_'+id); if(inp) try{ inp.focus(); }catch(e){}
+  });
 }
 function boardWithPred(m,p,locked){
   const a = p?p.a:'', b = p?p.b:'';
